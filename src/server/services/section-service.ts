@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { section, item, project } from "@/server/db/schema";
 import { eq, and, sql, asc, inArray } from "drizzle-orm";
-import { canCreateSection } from "@/server/lib/plan-limits";
+import { getPlanLimits } from "@/server/lib/plan-limits";
 import { sseManager } from "@/server/lib/sse-manager";
 import { logActivity } from "@/server/lib/log-activity";
 
@@ -48,24 +48,26 @@ export async function createSection(
   userName: string,
   data: { projectId: string; title: string; order?: number; color?: string; icon?: string }
 ) {
-  if (!(await verifyProjectOrg(data.projectId, orgId))) {
+  // Single query: verify project ownership + count sections + get max order
+  const [info] = await db
+    .select({
+      projectId: project.id,
+      sectionCount: sql<number>`(select count(*) from ${section} where ${section.projectId} = ${project.id})`,
+      maxOrder: sql<number>`(select coalesce(max(${section.order}), -1) from ${section} where ${section.projectId} = ${project.id})`,
+    })
+    .from(project)
+    .where(and(eq(project.id, data.projectId), eq(project.organizationId, orgId)));
+
+  if (!info) {
     return { error: "Project not found" } as const;
   }
 
-  const allowed = await canCreateSection(data.projectId);
-  if (!allowed) {
+  const limits = getPlanLimits();
+  if (info.sectionCount >= limits.sectionsPerProject) {
     return { error: "Section limit reached for current plan" } as const;
   }
 
-  let order = data.order;
-  if (order === undefined) {
-    const [maxRow] = await db
-      .select({ max: sql<number>`coalesce(max(${section.order}), -1)` })
-      .from(section)
-      .where(eq(section.projectId, data.projectId));
-    order = (maxRow?.max ?? -1) + 1;
-  }
-
+  const order = data.order ?? (info.maxOrder + 1);
   const id = crypto.randomUUID();
   const now = new Date();
   const [row] = await db

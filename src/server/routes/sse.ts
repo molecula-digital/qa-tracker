@@ -8,6 +8,7 @@ sse.use("*", requireOrg);
 
 sse.get("/", (c) => {
   const projectId = c.req.query("projectId");
+  const clientId = c.req.query("clientId") ?? crypto.randomUUID();
   if (!projectId) {
     return c.json({ error: "projectId required" }, 400);
   }
@@ -17,10 +18,10 @@ sse.get("/", (c) => {
       const encoder = new TextEncoder();
       controller.enqueue(
         encoder.encode(
-          `event: connected\ndata: ${JSON.stringify({ projectId })}\n\n`
+          `event: connected\ndata: ${JSON.stringify({ projectId, clientId })}\n\n`
         )
       );
-      const conn = sseManager.add(projectId, controller);
+      const conn = sseManager.add(projectId, controller, clientId);
 
       const pingInterval = setInterval(() => {
         try {

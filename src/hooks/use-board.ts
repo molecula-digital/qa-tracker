@@ -18,5 +18,6 @@ export function useBoard(projectId: string) {
     queryFn: () =>
       fetchJSON(`/api/board?projectId=${encodeURIComponent(projectId)}`),
     enabled: !!projectId,
+    staleTime: 5000,
   });
 }

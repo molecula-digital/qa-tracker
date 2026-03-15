@@ -38,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Item, TagKey } from "@/types/tracker";
+import type { Item, Section, TagKey } from "@/types/tracker";
 import { useUpdateProject } from "@/hooks/use-projects";
 import { organization as orgClient } from "@/lib/auth-client";
 import { Switch } from "@/components/ui/switch";
@@ -454,6 +454,25 @@ export default function ProjectPage({
     qc.invalidateQueries({ queryKey: ["activity", id] });
   }, [qc, id]);
 
+  // Optimistic update helper: snapshot board cache, apply updater, return rollback
+  const optimisticBoard = useCallback(
+    (updater: (old: { sections: Section[] }) => { sections: Section[] }) => {
+      const prev = qc.getQueryData<{ sections: Section[] }>(["board", id]);
+      if (prev) {
+        qc.setQueryData(["board", id], updater(prev));
+      }
+      return prev;
+    },
+    [qc, id]
+  );
+
+  const rollbackBoard = useCallback(
+    (prev: { sections: Section[] } | undefined) => {
+      if (prev) qc.setQueryData(["board", id], prev);
+    },
+    [qc, id]
+  );
+
   // Stats
   const stats = useMemo(() => {
     if (!board?.sections) return { done: 0, total: 0, sections: 0, perSection: [] as { name: string; done: number; total: number }[] };
@@ -488,92 +507,192 @@ export default function ProjectPage({
     (sectionId: string, itemId: string) => {
       const item = findItem(sectionId, itemId);
       if (!item) return;
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.map((s) =>
+          s.id === sectionId
+            ? { ...s, items: s.items.map((i: Item) => (i.id === itemId ? { ...i, checked: !i.checked } : i)) }
+            : s
+        ),
+      }));
       updateItem.mutate(
         { id: itemId, currentSectionId: sectionId, checked: !item.checked },
-        { onSettled: invalidateBoard }
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
       );
     },
-    [findItem, updateItem, invalidateBoard]
+    [findItem, updateItem, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
   const handleAddItem = useCallback(
     (sectionId: string, text: string) => {
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.map((s) =>
+          s.id === sectionId
+            ? {
+                ...s,
+                items: [
+                  ...s.items,
+                  { id: crypto.randomUUID(), text, checked: false, tags: [], notes: [] },
+                ],
+              }
+            : s
+        ),
+      }));
       createItem.mutate(
         { sectionId, text },
-        { onSettled: invalidateBoard }
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
       );
     },
-    [createItem, invalidateBoard]
+    [createItem, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
   const handleDeleteItem = useCallback(
     (sectionId: string, itemId: string) => {
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.map((s) =>
+          s.id === sectionId
+            ? { ...s, items: s.items.filter((i: Item) => i.id !== itemId) }
+            : s
+        ),
+      }));
       deleteItem.mutate(
         { id: itemId, sectionId },
-        { onSettled: invalidateBoard }
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
       );
     },
-    [deleteItem, invalidateBoard]
+    [deleteItem, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
   const handleAddNote = useCallback(
-    (_sectionId: string, itemId: string, text: string) => {
+    (sectionId: string, itemId: string, text: string) => {
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.map((s) =>
+          s.id === sectionId
+            ? {
+                ...s,
+                items: s.items.map((i: Item) =>
+                  i.id === itemId
+                    ? { ...i, notes: [...i.notes, { id: crypto.randomUUID(), text, ts: Date.now() }] }
+                    : i
+                ),
+              }
+            : s
+        ),
+      }));
       createNote.mutate(
         { itemId, text },
-        { onSettled: invalidateBoard }
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
       );
     },
-    [createNote, invalidateBoard]
+    [createNote, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
   const handleDeleteNote = useCallback(
-    (_sectionId: string, itemId: string, noteId: string) => {
+    (sectionId: string, itemId: string, noteId: string) => {
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.map((s) =>
+          s.id === sectionId
+            ? {
+                ...s,
+                items: s.items.map((i: Item) =>
+                  i.id === itemId
+                    ? { ...i, notes: i.notes.filter((n: { id: string }) => n.id !== noteId) }
+                    : i
+                ),
+              }
+            : s
+        ),
+      }));
       deleteNote.mutate(
         { id: noteId, itemId },
-        { onSettled: invalidateBoard }
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
       );
     },
-    [deleteNote, invalidateBoard]
+    [deleteNote, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
   const handleDeleteSection = useCallback(
     (sectionId: string) => {
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.filter((s) => s.id !== sectionId),
+      }));
       deleteSection.mutate(
         { id: sectionId, projectId: id },
-        { onSettled: invalidateBoard }
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
       );
     },
-    [deleteSection, id, invalidateBoard]
+    [deleteSection, id, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
   const handleUpdateSectionTitle = useCallback(
     (sectionId: string, title: string) => {
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.map((s) =>
+          s.id === sectionId ? { ...s, title } : s
+        ),
+      }));
       updateSection.mutate(
         { id: sectionId, projectId: id, title },
-        { onSettled: invalidateBoard }
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
       );
     },
-    [updateSection, id, invalidateBoard]
+    [updateSection, id, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
   const handleColorChange = useCallback(
     (sectionId: string, color: string) => {
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.map((s) =>
+          s.id === sectionId ? { ...s, color } : s
+        ),
+      }));
       updateSection.mutate(
         { id: sectionId, projectId: id, color },
-        { onSettled: invalidateBoard }
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
       );
     },
-    [updateSection, id, invalidateBoard]
+    [updateSection, id, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
   const handleIconChange = useCallback(
     (sectionId: string, icon: string) => {
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.map((s) =>
+          s.id === sectionId ? { ...s, icon } : s
+        ),
+      }));
       updateSection.mutate(
         { id: sectionId, projectId: id, icon },
-        { onSettled: invalidateBoard }
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
       );
     },
-    [updateSection, id, invalidateBoard]
+    [updateSection, id, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
   const handleReorder = useCallback(
@@ -583,15 +702,29 @@ export default function ProjectPage({
       const [moved] = reordered.splice(fromIndex, 1);
       reordered.splice(toIndex, 0, moved);
 
+      const prev = optimisticBoard(() => ({ sections: reordered }));
       reorderSections.mutate(
         { projectId: id, sectionIds: reordered.map((s) => s.id) },
-        { onSettled: invalidateBoard }
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
       );
     },
-    [board, reorderSections, id, invalidateBoard]
+    [board, reorderSections, id, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
   const handleAddSection = useCallback(() => {
+    const tempId = crypto.randomUUID();
+    const prev = optimisticBoard((old) => ({
+      sections: [
+        ...old.sections,
+        { id: tempId, title: "New section", open: true, items: [] },
+      ],
+    }));
+    setNewestSectionId(tempId);
+    setTimeout(() => setNewestSectionId(null), 2000);
+
     createSection.mutate(
       { projectId: id, title: "New section" },
       {
@@ -599,10 +732,11 @@ export default function ProjectPage({
           setNewestSectionId(data.id);
           setTimeout(() => setNewestSectionId(null), 2000);
         },
+        onError: () => rollbackBoard(prev),
         onSettled: invalidateBoard,
       }
     );
-  }, [createSection, id, invalidateBoard]);
+  }, [createSection, id, invalidateBoard, optimisticBoard, rollbackBoard]);
 
   const handleOpenTagPicker = useCallback(
     (anchorEl: HTMLButtonElement, item: Item, sectionId: string) => {

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { auth } from "@/lib/auth";
+import { runWithRequestContext } from "./lib/request-context";
 import health from "./routes/health";
 import projects from "./routes/projects";
 import sections from "./routes/sections";
@@ -17,6 +18,12 @@ import chat from "./routes/chat";
 const app = new Hono().basePath("/api");
 
 app.use("*", logger());
+
+// Propagate SSE client ID so broadcasts skip the requesting client
+app.use("*", async (c, next) => {
+  const sseClientId = c.req.header("X-SSE-Client-Id");
+  return runWithRequestContext({ sseClientId }, () => next());
+});
 
 // Mount Better Auth — handles all /api/auth/* routes
 app.on(["GET", "POST"], "/auth/*", (c) => {

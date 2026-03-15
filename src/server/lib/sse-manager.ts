@@ -1,6 +1,9 @@
+import { getRequestSSEClientId } from "./request-context";
+
 type SSEConnection = {
   controller: ReadableStreamDefaultController;
   projectId: string;
+  clientId: string;
 };
 
 class SSEManager {
@@ -8,9 +11,10 @@ class SSEManager {
 
   add(
     projectId: string,
-    controller: ReadableStreamDefaultController
+    controller: ReadableStreamDefaultController,
+    clientId: string
   ): SSEConnection {
-    const conn: SSEConnection = { controller, projectId };
+    const conn: SSEConnection = { controller, projectId, clientId };
     if (!this.connections.has(projectId)) {
       this.connections.set(projectId, new Set());
     }
@@ -32,10 +36,13 @@ class SSEManager {
     const conns = this.connections.get(projectId);
     if (!conns) return;
 
+    // Auto-exclude the requesting client to prevent double-invalidation
+    const excludeClientId = getRequestSSEClientId();
     const data = `event: invalidate\ndata: ${JSON.stringify(event)}\n\n`;
     const encoder = new TextEncoder();
 
     for (const conn of conns) {
+      if (excludeClientId && conn.clientId === excludeClientId) continue;
       try {
         conn.controller.enqueue(encoder.encode(data));
       } catch {

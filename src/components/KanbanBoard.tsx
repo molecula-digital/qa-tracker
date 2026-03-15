@@ -87,7 +87,7 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="flex gap-3 overflow-x-auto overflow-y-hidden items-start pb-6 pt-1 h-full">
+    <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-6 pt-1 h-full">
       <AnimatePresence initial={false}>
         {sections.map((section, i) => (
           <motion.div
@@ -97,7 +97,7 @@ export function KanbanBoard({
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.88, x: -24 }}
             transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-            className="shrink-0 flex"
+            className="shrink-0 flex h-full"
           >
             <KanbanColumn
               section={section}
@@ -131,7 +131,7 @@ export function KanbanBoard({
 
       {/* Add section placeholder */}
       <div
-        className={`w-[300px] shrink-0 flex items-center justify-center rounded-[14px] border-2 border-dashed transition-colors cursor-pointer group/add ${
+        className={`w-[300px] shrink-0 flex items-center justify-center rounded-[14px] border-2 border-dashed transition-colors cursor-pointer group/add self-start ${
           'border-border/40 hover:border-border hover:bg-muted/30 min-h-[120px]'
         }`}
         onClick={onAddSection}
