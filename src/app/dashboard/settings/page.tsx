@@ -8,14 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Building2, AlertTriangle } from "lucide-react";
+import { Building2 } from "lucide-react";
 
 interface OrgData {
   id: string;
@@ -36,11 +29,6 @@ export default function SettingsPage() {
   const [orgSlug, setOrgSlug] = useState("");
   const [orgSaving, setOrgSaving] = useState(false);
   const [orgSaved, setOrgSaved] = useState(false);
-
-  // Delete dialog
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [deleting, setDeleting] = useState(false);
 
   const loadOrg = useCallback(async () => {
     try {
@@ -86,17 +74,6 @@ export default function SettingsPage() {
       // handle error
     } finally {
       setOrgSaving(false);
-    }
-  }
-
-  async function handleDeleteOrg() {
-    if (!org || deleteConfirm !== org.name) return;
-    setDeleting(true);
-    try {
-      await organization.delete({ organizationId: org.id });
-      router.push("/dashboard/onboarding");
-    } catch {
-      setDeleting(false);
     }
   }
 
@@ -186,67 +163,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Danger zone */}
-      <Card className="border-red-900/50">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-red-400" />
-            <div>
-              <CardTitle className="text-base text-red-400">Danger zone</CardTitle>
-              <CardDescription className="text-xs">
-                Irreversible actions
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-3">
-            Deleting your workspace will permanently remove all projects, sections,
-            items, and member data. This action cannot be undone.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-red-800 text-red-400 hover:bg-red-950 hover:text-red-300"
-            onClick={() => setDeleteOpen(true)}
-          >
-            Delete workspace
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Delete confirmation dialog */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="bg-card border-border max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-red-400">Delete workspace</DialogTitle>
-            <DialogDescription>
-              This will permanently delete <strong>{org?.name}</strong> and all its data.
-              Type the workspace name to confirm.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <Input
-              placeholder={org?.name}
-              value={deleteConfirm}
-              onChange={(e) => setDeleteConfirm(e.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setDeleteOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="bg-red-600 hover:bg-red-700 text-white"
-                disabled={deleteConfirm !== org?.name || deleting}
-                onClick={handleDeleteOrg}
-              >
-                {deleting ? "Deleting..." : "Delete permanently"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

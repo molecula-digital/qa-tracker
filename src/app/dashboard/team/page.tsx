@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { organization } from "@/lib/auth-client";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +14,15 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserPlus, Mail, X } from "lucide-react";
+import { UserPlus, Mail, X, AlertTriangle } from "lucide-react";
 
 interface Member {
   id: string;
@@ -31,19 +38,33 @@ interface Invitation {
   expiresAt: string;
 }
 
+interface OrgInfo {
+  id: string;
+  name: string;
+}
+
 export default function TeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
+  const [currentOrg, setCurrentOrg] = useState<OrgInfo | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"member" | "admin">("member");
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
 
+  // Delete workspace state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
   const loadMembers = useCallback(async () => {
     try {
       const result = await organization.getFullOrganization();
+      if (result.data) {
+        setCurrentOrg({ id: result.data.id, name: result.data.name });
+      }
       if (result.data?.members) {
         setMembers(result.data.members as unknown as Member[]);
       }
@@ -104,6 +125,29 @@ export default function TeamPage() {
   async function handleCancelInvitation(invitationId: string) {
     await organization.cancelInvitation({ invitationId });
     loadMembers();
+  }
+
+  async function handleDeleteOrg() {
+    if (!currentOrg || deleteConfirm !== currentOrg.name) return;
+    setDeleting(true);
+    try {
+      await organization.delete({ organizationId: currentOrg.id });
+
+      // Check if user has other orgs to switch to
+      const orgsResult = await organization.list();
+      const remainingOrgs = orgsResult.data;
+
+      if (remainingOrgs && remainingOrgs.length > 0) {
+        // Switch to the first available org and reload
+        await organization.setActive({ organizationId: remainingOrgs[0].id });
+        window.location.href = "/dashboard";
+      } else {
+        // No orgs left — send to onboarding
+        window.location.href = "/dashboard/onboarding";
+      }
+    } catch {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -267,6 +311,70 @@ export default function TeamPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Danger zone */}
+      {currentOrg && (
+        <Card className="border-red-900/50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={16} className="text-red-400" />
+              <div>
+                <CardTitle className="text-base text-red-400">Danger zone</CardTitle>
+                <CardDescription className="text-xs">
+                  Irreversible actions
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              Deleting this workspace will permanently remove all projects, sections,
+              items, and member data. This action cannot be undone.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-800 text-red-400 hover:bg-red-950 hover:text-red-300"
+              onClick={() => setDeleteOpen(true)}
+            >
+              Delete workspace
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="bg-card border-border max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-red-400">Delete workspace</DialogTitle>
+            <DialogDescription>
+              This will permanently delete <strong>{currentOrg?.name}</strong> and all its data.
+              Type the workspace name to confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <Input
+              placeholder={currentOrg?.name}
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setDeleteOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={deleteConfirm !== currentOrg?.name || deleting}
+                onClick={handleDeleteOrg}
+              >
+                {deleting ? "Deleting..." : "Delete permanently"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
