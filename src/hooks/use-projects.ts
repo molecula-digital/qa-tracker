@@ -15,6 +15,8 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
+  slug: string;
+  isPublic: boolean;
   organizationId: string;
   createdBy: string;
   createdAt: string;
@@ -62,6 +64,8 @@ export function useUpdateProject() {
       id: string;
       name?: string;
       description?: string;
+      isPublic?: boolean;
+      slug?: string;
     }) =>
       fetchJSON<Project>(`/api/projects/${id}`, {
         method: "PUT",
