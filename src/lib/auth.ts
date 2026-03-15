@@ -2,15 +2,13 @@ import { betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { organization } from "better-auth/plugins/organization";
-import { stripe } from "@better-auth/stripe";
-import Stripe from "stripe";
 import { eq, and, gt, asc } from "drizzle-orm";
 import { db } from "@/server/db";
 import * as schema from "@/server/db/schema";
 
-const stripeClient = new Stripe(
+/* const stripeClient = new Stripe(
   process.env.STRIPE_SECRET_KEY || "sk_placeholder_for_build"
-);
+); */
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
@@ -149,7 +147,7 @@ export const auth = betterAuth({
       allowUserToCreateOrganization: true,
       organizationLimit: 5,
     }),
-    stripe({
+/*     stripe({
       stripeClient,
       stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
       createCustomerOnSignUp: true,
@@ -177,7 +175,7 @@ export const auth = betterAuth({
       organization: {
         enabled: true,
       },
-    }),
+    }), */
   ],
 });
 
