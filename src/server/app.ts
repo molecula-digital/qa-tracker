@@ -2,6 +2,10 @@ import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { auth } from "@/lib/auth";
 import health from "./routes/health";
+import projects from "./routes/projects";
+import sections from "./routes/sections";
+import items from "./routes/items";
+import notes from "./routes/notes";
 
 const app = new Hono().basePath("/api");
 
@@ -13,6 +17,10 @@ app.on(["GET", "POST"], "/auth/**", (c) => {
 });
 
 app.route("/health", health);
+app.route("/projects", projects);
+app.route("/sections", sections);
+app.route("/items", items);
+app.route("/notes", notes);
 
 export default app;
 export type AppType = typeof app;
