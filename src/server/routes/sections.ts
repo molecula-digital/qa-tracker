@@ -50,6 +50,27 @@ sections.post(
 );
 
 sections.put(
+  "/reorder",
+  zValidator(
+    "json",
+    z.object({
+      projectId: z.string().min(1),
+      sectionIds: z.array(z.string().min(1)).min(1),
+    })
+  ),
+  async (c) => {
+    const { projectId, sectionIds } = c.req.valid("json");
+    const result = await sectionService.reorderSections(
+      c.get("organizationId"),
+      projectId,
+      sectionIds
+    );
+    if (!result) return c.json({ error: "Project not found" }, 404);
+    return c.json(result);
+  }
+);
+
+sections.put(
   "/:id",
   zValidator(
     "json",

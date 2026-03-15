@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import { section, item, project } from "@/server/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, asc, inArray } from "drizzle-orm";
 import { canCreateSection } from "@/server/lib/plan-limits";
 import { sseManager } from "@/server/lib/sse-manager";
 import { logActivity } from "@/server/lib/log-activity";
@@ -57,6 +57,15 @@ export async function createSection(
     return { error: "Section limit reached for current plan" } as const;
   }
 
+  let order = data.order;
+  if (order === undefined) {
+    const [maxRow] = await db
+      .select({ max: sql<number>`coalesce(max(${section.order}), -1)` })
+      .from(section)
+      .where(eq(section.projectId, data.projectId));
+    order = (maxRow?.max ?? -1) + 1;
+  }
+
   const id = crypto.randomUUID();
   const now = new Date();
   const [row] = await db
@@ -65,7 +74,7 @@ export async function createSection(
       id,
       projectId: data.projectId,
       title: data.title,
-      order: data.order ?? 0,
+      order,
       color: data.color ?? null,
       icon: data.icon ?? null,
       open: true,
@@ -123,6 +132,27 @@ export async function updateSection(
   return row;
 }
 
+export async function reorderSections(
+  orgId: string,
+  projectId: string,
+  sectionIds: string[]
+) {
+  if (!(await verifyProjectOrg(projectId, orgId))) return null;
+
+  const now = new Date();
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < sectionIds.length; i++) {
+      await tx
+        .update(section)
+        .set({ order: i, updatedAt: now })
+        .where(and(eq(section.id, sectionIds[i]), eq(section.projectId, projectId)));
+    }
+  });
+
+  sseManager.broadcast(projectId, { type: "invalidate", entity: "sections" });
+  return { success: true };
+}
+
 export async function deleteSection(
   orgId: string,
   userId: string,
@@ -136,9 +166,25 @@ export async function deleteSection(
     .where(and(eq(section.id, sectionId), eq(project.organizationId, orgId)));
   if (!existing) return null;
 
+  const projectId = existing.section.projectId;
   await db.delete(section).where(eq(section.id, sectionId));
 
-  sseManager.broadcast(existing.section.projectId, { type: "invalidate", entity: "sections" });
+  // Re-normalize remaining section orders to be contiguous
+  const remaining = await db
+    .select({ id: section.id })
+    .from(section)
+    .where(eq(section.projectId, projectId))
+    .orderBy(asc(section.order));
+
+  const now = new Date();
+  for (let i = 0; i < remaining.length; i++) {
+    await db
+      .update(section)
+      .set({ order: i, updatedAt: now })
+      .where(eq(section.id, remaining[i].id));
+  }
+
+  sseManager.broadcast(projectId, { type: "invalidate", entity: "sections" });
   logActivity({
     projectId: existing.section.projectId,
     actorId: userId,

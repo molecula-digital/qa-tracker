@@ -80,6 +80,21 @@ export function useUpdateSection() {
   });
 }
 
+export function useReorderSections() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { projectId: string; sectionIds: string[] }) =>
+      fetchJSON<{ success: boolean }>("/api/sections/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["sections", vars.projectId] });
+    },
+  });
+}
+
 export function useDeleteSection() {
   const qc = useQueryClient();
   return useMutation({

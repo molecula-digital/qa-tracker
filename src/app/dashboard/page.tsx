@@ -354,11 +354,9 @@ export default function DashboardPage() {
             <h1 className="text-xl font-semibold text-foreground">Projects</h1>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger>
-              <Button size="sm" className="gap-1.5">
-                <Plus size={14} />
-                New project
-              </Button>
+            <DialogTrigger render={<Button size="sm" className="gap-1.5" />}>
+              <Plus size={14} />
+              New project
             </DialogTrigger>
             <DialogContent>
               <form onSubmit={handleCreate}>

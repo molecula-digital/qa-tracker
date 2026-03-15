@@ -15,6 +15,7 @@ import {
   useCreateSection,
   useUpdateSection,
   useDeleteSection,
+  useReorderSections,
 } from "@/hooks/use-sections";
 import {
   useCreateItem,
@@ -440,6 +441,7 @@ export default function ProjectPage({
   const createSection = useCreateSection();
   const updateSection = useUpdateSection();
   const deleteSection = useDeleteSection();
+  const reorderSections = useReorderSections();
   const createItem = useCreateItem();
   const updateItem = useUpdateItem();
   const deleteItem = useDeleteItem();
@@ -581,14 +583,12 @@ export default function ProjectPage({
       const [moved] = reordered.splice(fromIndex, 1);
       reordered.splice(toIndex, 0, moved);
 
-      reordered.forEach((sec, idx) => {
-        updateSection.mutate(
-          { id: sec.id, projectId: id, order: idx },
-          { onSettled: invalidateBoard }
-        );
-      });
+      reorderSections.mutate(
+        { projectId: id, sectionIds: reordered.map((s) => s.id) },
+        { onSettled: invalidateBoard }
+      );
     },
-    [board, updateSection, id, invalidateBoard]
+    [board, reorderSections, id, invalidateBoard]
   );
 
   const handleAddSection = useCallback(() => {
