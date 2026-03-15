@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   FolderKanban, Plus, Trash2, CheckCircle2, ListTodo,
-  TrendingUp, LayoutGrid, Activity, Clock, Mail, Building2,
+  TrendingUp, LayoutGrid, Clock, Mail, Building2,
 } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import { useProjectStats, type ProjectStats } from "@/hooks/use-project-stats";
@@ -276,13 +276,6 @@ function ProjectCard({ project, onDelete }: { project: ProjectStats; onDelete: (
               <span className="font-mono">{project.sectionCount}</span>
               <span>sections</span>
             </span>
-            {project.recentActivityCount > 0 && (
-              <span className="flex items-center gap-1">
-                <Activity size={11} className="text-blue-400" />
-                <span className="font-mono">{project.recentActivityCount}</span>
-                <span>this week</span>
-              </span>
-            )}
           </div>
 
           {/* Footer */}
