@@ -35,9 +35,10 @@ export function useTracker() {
   const [search, setSearch] = useState('')
 
   const actions = {
-    addSection: () => {
+    addSection: (onCreated?: (id: string) => void) => {
       const sec: Section = { id: uid(), title: 'New section', items: [], open: true }
-      setData((prev) => ({ ...prev, sections: [...prev.sections, sec] }))
+      setData((prev) => ({ ...prev, sections: [sec, ...prev.sections] }))
+      onCreated?.(sec.id)
     },
 
     deleteSection: (sectionId: string) => {
@@ -118,6 +119,15 @@ export function useTracker() {
           notes: i.notes.filter((n) => n.id !== noteId),
         })),
       )
+    },
+
+    reorderSections: (fromIndex: number, toIndex: number) => {
+      setData((prev) => {
+        const sections = [...prev.sections]
+        const [moved] = sections.splice(fromIndex, 1)
+        sections.splice(toIndex, 0, moved)
+        return { ...prev, sections }
+      })
     },
 
     updateSectionColor: (sectionId: string, color: string) => {

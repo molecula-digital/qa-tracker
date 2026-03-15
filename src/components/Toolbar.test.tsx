@@ -9,14 +9,16 @@ describe('Toolbar', () => {
     onAddSection: vi.fn(),
     onExport: vi.fn(),
     onImport: vi.fn(),
+    onShowStats: vi.fn(),
+    statsSummary: '0/0',
   }
 
   it('renders search input, add, export, and import controls', () => {
     render(<Toolbar {...defaultProps} />)
     expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /add section/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /export/i })).toBeInTheDocument()
-    expect(screen.getByText(/import/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /export json/i })).toBeInTheDocument()
+    expect(screen.getByTitle(/import json/i)).toBeInTheDocument()
   })
 
   it('calls onSearchChange when typing in search', () => {
@@ -33,10 +35,10 @@ describe('Toolbar', () => {
     expect(onAddSection).toHaveBeenCalledOnce()
   })
 
-  it('calls onExport when Export JSON clicked', () => {
+  it('calls onExport when Export button clicked', () => {
     const onExport = vi.fn()
     render(<Toolbar {...defaultProps} onExport={onExport} />)
-    fireEvent.click(screen.getByRole('button', { name: /export/i }))
+    fireEvent.click(screen.getByRole('button', { name: /export json/i }))
     expect(onExport).toHaveBeenCalledOnce()
   })
 })

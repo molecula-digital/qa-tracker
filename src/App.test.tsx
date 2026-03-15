@@ -10,11 +10,11 @@ describe('App', () => {
 
   it('renders the empty state when no sections', () => {
     render(<App />)
-    expect(screen.getByText(/no sections yet/i)).toBeInTheDocument()
+    expect(screen.getByText(/no columns yet/i)).toBeInTheDocument()
   })
 
   it('renders search input', () => {
     render(<App />)
-    expect(screen.getByPlaceholderText(/search tests/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument()
   })
 })

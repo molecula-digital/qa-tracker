@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { BarChart2 } from 'lucide-react'
 import { SearchIcon, PlusIcon, DownloadIcon, UploadIcon } from './Icons'
 
 interface ToolbarProps {
@@ -7,69 +8,55 @@ interface ToolbarProps {
   onAddSection: () => void
   onExport: () => void
   onImport: (file: File) => void
+  onShowStats: () => void
+  statsSummary: string
 }
 
-export function Toolbar({ search, onSearchChange, onAddSection, onExport, onImport }: ToolbarProps) {
+export function Toolbar({ search, onSearchChange, onAddSection, onExport, onImport, onShowStats, statsSummary }: ToolbarProps) {
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const btnStyle: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '8px 14px',
-    border: '1px solid #ddd5c2',
-    borderRadius: 10,
-    background: '#fff',
-    fontSize: 13,
-    color: '#3a3228',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap' as const,
-    fontFamily: 'inherit',
-    transition: 'background 0.15s, border-color 0.15s',
+  const btn: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px',
+    border: '1px solid #ddd5c2', borderRadius: 9, cursor: 'pointer',
+    whiteSpace: 'nowrap', fontFamily: 'inherit', fontSize: 13,
+    background: '#fff', color: '#3a3228', flexShrink: 0,
   }
 
   return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
-      {/* Search */}
-      <div style={{ flex: 1, minWidth: 160, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: '1px solid #ddd5c2', borderRadius: 10, background: '#fff' }}>
-        <span style={{ color: '#8a7d6e', flexShrink: 0, display: 'flex' }}>
-          <SearchIcon />
-        </span>
+    <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'nowrap' }}>
+      {/* Search — compact */}
+      <div style={{ width: 172, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', border: '1px solid #ddd5c2', borderRadius: 9, background: '#fff', flexShrink: 0 }}>
+        <span style={{ color: '#8a7d6e', flexShrink: 0, display: 'flex' }}><SearchIcon /></span>
         <input
           type="text"
-          placeholder="Search tests…"
+          placeholder="Search…"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: '#3a3228', width: '100%', fontFamily: 'inherit', padding: 0 }}
+          style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: '#3a3228', width: '100%', fontFamily: 'inherit', padding: 0 }}
         />
       </div>
 
+      {/* Stats */}
+      <button style={btn} onClick={onShowStats} title="Progress overview">
+        <BarChart2 size={14} /> {statsSummary}
+      </button>
+
       {/* Export */}
-      <button style={btnStyle} onClick={onExport} aria-label="Export JSON">
-        <DownloadIcon /> Export JSON
+      <button style={btn} onClick={onExport} aria-label="Export JSON" title="Export JSON">
+        <DownloadIcon /> Export
       </button>
 
       {/* Import */}
-      <label style={{ ...btnStyle, cursor: 'pointer' }}>
-        <UploadIcon /> Import JSON
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".json"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) {
-              onImport(file)
-              e.target.value = ''
-            }
-          }}
+      <label style={{ ...btn, cursor: 'pointer' }} title="Import JSON">
+        <UploadIcon /> Import
+        <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) { onImport(f); e.target.value = '' } }}
         />
       </label>
 
       {/* Add section */}
       <button
-        style={{ ...btnStyle, background: '#7a8c5c', borderColor: '#7a8c5c', color: '#fff', fontWeight: 500 }}
+        style={{ ...btn, background: '#7a8c5c', borderColor: '#7a8c5c', color: '#fff', fontWeight: 600 }}
         onClick={onAddSection}
         aria-label="Add section"
       >
