@@ -4,6 +4,7 @@ import { use } from "react";
 import Link from "next/link";
 import { useProject } from "@/hooks/use-projects";
 import { useSections } from "@/hooks/use-sections";
+import { useSSE } from "@/hooks/use-sse";
 
 export default function ProjectPage({
   params,
@@ -13,6 +14,7 @@ export default function ProjectPage({
   const { id } = use(params);
   const { data: project, isLoading: loadingProject, error: projectError } = useProject(id);
   const { data: sections, isLoading: loadingSections } = useSections(id);
+  useSSE(id);
 
   if (loadingProject) {
     return <p className="text-neutral-500 text-sm">Loading project...</p>;

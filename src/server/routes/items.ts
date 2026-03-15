@@ -5,10 +5,20 @@ import { db } from "@/server/db";
 import { item, itemTag, section, project } from "@/server/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { requireOrg, type OrgEnv } from "@/server/middleware/org";
+import { sseManager } from "@/server/lib/sse-manager";
 
 const items = new Hono<OrgEnv>();
 
 items.use("*", requireOrg);
+
+/** Get projectId from a sectionId */
+async function getProjectId(sectionId: string): Promise<string | null> {
+  const [s] = await db
+    .select({ projectId: section.projectId })
+    .from(section)
+    .where(eq(section.id, sectionId));
+  return s?.projectId ?? null;
+}
 
 /** Verify a section belongs to the current org */
 async function verifySectionOrg(sectionId: string, orgId: string) {
@@ -96,6 +106,8 @@ items.post(
         updatedAt: now,
       })
       .returning();
+    const projectId = await getProjectId(body.sectionId);
+    if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
     return c.json({ ...row, tags: [] }, 201);
   }
 );
@@ -137,6 +149,8 @@ items.put(
       .set({ ...body, updatedAt: new Date() })
       .where(eq(item.id, id))
       .returning();
+    const projectId = await getProjectId(row.sectionId);
+    if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
     return c.json(row);
   }
 );
@@ -154,6 +168,8 @@ items.delete("/:id", async (c) => {
   }
 
   await db.delete(item).where(eq(item.id, id));
+  const projectId = await getProjectId(existing.sectionId);
+  if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
   return c.json({ success: true });
 });
 
@@ -190,6 +206,8 @@ items.post(
       );
     }
 
+    const projectId = await getProjectId(existing.sectionId);
+    if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
     return c.json({ tags });
   }
 );

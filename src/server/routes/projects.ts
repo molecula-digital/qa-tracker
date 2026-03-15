@@ -6,6 +6,7 @@ import { project } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireOrg, type OrgEnv } from "@/server/middleware/org";
 import { canCreateProject } from "@/server/lib/plan-limits";
+import { sseManager } from "@/server/lib/sse-manager";
 
 const projects = new Hono<OrgEnv>();
 
@@ -68,6 +69,7 @@ projects.post(
         updatedAt: now,
       })
       .returning();
+    sseManager.broadcast(orgId, { type: "invalidate", entity: "projects" });
     return c.json(row, 201);
   }
 );
@@ -93,6 +95,7 @@ projects.put(
       .where(and(eq(project.id, id), eq(project.organizationId, orgId)))
       .returning();
     if (!row) return c.json({ error: "Not found" }, 404);
+    sseManager.broadcast(orgId, { type: "invalidate", entity: "projects" });
     return c.json(row);
   }
 );
@@ -106,6 +109,7 @@ projects.delete("/:id", async (c) => {
     .where(and(eq(project.id, id), eq(project.organizationId, orgId)))
     .returning();
   if (!row) return c.json({ error: "Not found" }, 404);
+  sseManager.broadcast(orgId, { type: "invalidate", entity: "projects" });
   return c.json({ success: true });
 });
 

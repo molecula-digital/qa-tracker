@@ -5,10 +5,21 @@ import { db } from "@/server/db";
 import { note, item, section, project } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireOrg, type OrgEnv } from "@/server/middleware/org";
+import { sseManager } from "@/server/lib/sse-manager";
 
 const notes = new Hono<OrgEnv>();
 
 notes.use("*", requireOrg);
+
+/** Get projectId from an itemId (item -> section -> project) */
+async function getProjectIdFromItem(itemId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ projectId: section.projectId })
+    .from(item)
+    .innerJoin(section, eq(item.sectionId, section.id))
+    .where(eq(item.id, itemId));
+  return row?.projectId ?? null;
+}
 
 /** Verify an item belongs to the current org (item -> section -> project -> org) */
 async function verifyItemOrg(itemId: string, orgId: string) {
@@ -72,6 +83,8 @@ notes.post(
         createdAt: new Date(),
       })
       .returning();
+    const projectId = await getProjectIdFromItem(body.itemId);
+    if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "notes" });
     return c.json(row, 201);
   }
 );
@@ -90,6 +103,8 @@ notes.delete("/:id", async (c) => {
   }
 
   await db.delete(note).where(eq(note.id, id));
+  const projectId = await getProjectIdFromItem(existing.itemId);
+  if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "notes" });
   return c.json({ success: true });
 });
 

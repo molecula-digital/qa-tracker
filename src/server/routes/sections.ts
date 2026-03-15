@@ -6,6 +6,7 @@ import { section, project } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireOrg, type OrgEnv } from "@/server/middleware/org";
 import { canCreateSection } from "@/server/lib/plan-limits";
+import { sseManager } from "@/server/lib/sse-manager";
 
 const sections = new Hono<OrgEnv>();
 
@@ -88,6 +89,7 @@ sections.post(
         updatedAt: now,
       })
       .returning();
+    sseManager.broadcast(body.projectId, { type: "invalidate", entity: "sections" });
     return c.json(row, 201);
   }
 );
@@ -123,6 +125,7 @@ sections.put(
       .set({ ...body, updatedAt: new Date() })
       .where(eq(section.id, id))
       .returning();
+    sseManager.broadcast(row.projectId, { type: "invalidate", entity: "sections" });
     return c.json(row);
   }
 );
@@ -141,6 +144,7 @@ sections.delete("/:id", async (c) => {
   if (!existing) return c.json({ error: "Not found" }, 404);
 
   await db.delete(section).where(eq(section.id, id));
+  sseManager.broadcast(existing.section.projectId, { type: "invalidate", entity: "sections" });
   return c.json({ success: true });
 });
 
