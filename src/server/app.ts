@@ -7,6 +7,7 @@ import sections from "./routes/sections";
 import items from "./routes/items";
 import notes from "./routes/notes";
 import sse from "./routes/sse";
+import board from "./routes/board";
 
 const app = new Hono().basePath("/api");
 
@@ -23,6 +24,7 @@ app.route("/sections", sections);
 app.route("/items", items);
 app.route("/notes", notes);
 app.route("/sse", sse);
+app.route("/board", board);
 
 export default app;
 export type AppType = typeof app;

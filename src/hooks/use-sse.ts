@@ -18,6 +18,10 @@ export function useSSE(projectId: string | undefined) {
         queryClient.invalidateQueries({
           queryKey: [data.entity, projectId],
         });
+        // Also invalidate the full board query so nested data refreshes
+        queryClient.invalidateQueries({
+          queryKey: ["board", projectId],
+        });
       } catch {
         // Ignore parse errors
       }
