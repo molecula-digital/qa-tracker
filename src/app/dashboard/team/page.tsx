@@ -15,7 +15,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Mail, X } from "lucide-react";
 
 interface Member {
   id: string;
@@ -23,8 +23,17 @@ interface Member {
   role: string;
 }
 
+interface Invitation {
+  id: string;
+  email: string;
+  role: string | null;
+  status: string;
+  expiresAt: string;
+}
+
 export default function TeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"member" | "admin">("member");
@@ -37,6 +46,12 @@ export default function TeamPage() {
       const result = await organization.getFullOrganization();
       if (result.data?.members) {
         setMembers(result.data.members as unknown as Member[]);
+      }
+      if (result.data?.invitations) {
+        const pending = (result.data.invitations as unknown as Invitation[]).filter(
+          (inv) => inv.status === "pending"
+        );
+        setInvitations(pending);
       }
     } catch {
       // silently fail
@@ -83,6 +98,11 @@ export default function TeamPage() {
 
   async function handleRemove(memberIdOrEmail: string) {
     await organization.removeMember({ memberIdOrEmail });
+    loadMembers();
+  }
+
+  async function handleCancelInvitation(invitationId: string) {
+    await organization.cancelInvitation({ invitationId });
     loadMembers();
   }
 
@@ -149,6 +169,51 @@ export default function TeamPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pending Invitations */}
+      {invitations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Mail size={16} className="text-muted-foreground" />
+              <CardTitle className="text-base">Pending invitations</CardTitle>
+              <Badge variant="secondary" className="ml-auto text-xs">
+                {invitations.length}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y divide-border">
+              {invitations.map((inv) => (
+                <li key={inv.id} className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback className="text-xs bg-muted text-muted-foreground">
+                        {inv.email.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{inv.email}</p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {inv.role ?? "member"} &middot; expires {new Date(inv.expiresAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-red-400"
+                    onClick={() => handleCancelInvitation(inv.id)}
+                    title="Cancel invitation"
+                  >
+                    <X size={14} />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Invite */}
       <Card>
