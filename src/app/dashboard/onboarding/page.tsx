@@ -46,7 +46,14 @@ export default function OnboardingPage() {
           result.error.message ?? "Failed to create organization. Please try again."
         );
       } else {
-        router.push("/dashboard");
+        const res = await fetch("/api/onboarding/complete", { method: "POST" });
+        if (!res.ok) {
+          setError("Failed to complete setup. Please try again.");
+          return;
+        }
+        // Use full page navigation to ensure the session cache is refreshed
+        // router.push would use the stale useSession() cache where onboardingFinished is still false
+        window.location.href = "/dashboard";
       }
     } catch {
       setError("An unexpected error occurred. Please try again.");
