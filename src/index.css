@@ -2,19 +2,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap');
 
 @theme {
-  --color-bg:      #faf8f3;
-  --color-surface: #f2ede3;
-  --color-border:  #ddd5c2;
-  --color-text:    #3a3228;
-  --color-muted:   #8a7d6e;
-  --color-accent:  #7a8c5c;
-  --color-track:   #e8e0d0;
-  --color-danger:  #a33333;
-  --font-serif:    Georgia, 'Times New Roman', serif;
+  --color-bg: #ffffff;
+  --color-surface: #fafafa;
+  --color-border: #e5e5e5;
+  --color-text: #0a0a0a;
+  --color-muted: #737373;
+  --color-accent: #7a8c5c;
+  --color-accent-light: #e8eee0;
+  --color-danger: #dc2626;
+  --font-sans: "Bricolage Grotesque", system-ui, sans-serif;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #faf8f3; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #ffffff;
+  color: #0a0a0a;
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 /* SuccessModal keyframe animations (cannot be expressed as Tailwind utilities) */
 @keyframes pop-circle {
