@@ -230,7 +230,7 @@ function KanbanColumn({
       </motion.div>
 
       {/* Cards list */}
-      <div style={{ flex: 1, overflowY: 'auto', maxHeight: '65vh', padding: '8px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: 0 }}>
         <AnimatePresence initial={false}>
           {filtered.map((item) => (
             <motion.div
