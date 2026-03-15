@@ -132,9 +132,7 @@ export function KanbanBoard({
       {/* Add section placeholder */}
       <div
         className={`w-[300px] shrink-0 flex items-center justify-center rounded-[14px] border-2 border-dashed transition-colors cursor-pointer group/add ${
-          isDraggingAny
-            ? 'border-emerald-600/40 bg-emerald-500/5 min-h-full'
-            : 'border-border/40 hover:border-border hover:bg-muted/30 min-h-[120px]'
+          'border-border/40 hover:border-border hover:bg-muted/30 min-h-[120px]'
         }`}
         onClick={onAddSection}
         onDragOver={(e) => e.preventDefault()}
