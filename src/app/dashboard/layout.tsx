@@ -27,6 +27,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { AiChat } from "@/components/AiChat";
 
 const navItems = [
   { label: "Projects", href: "/dashboard", icon: FolderKanban },
@@ -309,6 +310,7 @@ export default function DashboardLayout({
       <main className="flex-1 p-4 bg-background overflow-auto">
         {children}
       </main>
+      <AiChat />
     </div>
   );
 }
