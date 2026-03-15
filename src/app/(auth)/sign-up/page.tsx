@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn, signUp } from "@/lib/auth-client";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export default function SignUpPage() {
+function SignUpForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -18,13 +18,18 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  const searchParams = useSearchParams();
+  const invitationToken = searchParams.get("invitation");
+
   async function handleGoogleSignUp() {
     setError(null);
     setGoogleLoading(true);
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
+        callbackURL: invitationToken
+          ? `/dashboard?invitation=${invitationToken}`
+          : "/dashboard",
       });
     } catch {
       setError("An unexpected error occurred. Please try again.");
@@ -42,6 +47,9 @@ export default function SignUpPage() {
         name,
         email,
         password,
+        fetchOptions: invitationToken
+          ? { query: { invitation: invitationToken } }
+          : undefined,
       });
 
       if (result.error) {
@@ -160,5 +168,13 @@ export default function SignUpPage() {
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpForm />
+    </Suspense>
   );
 }
