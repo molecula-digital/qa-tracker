@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 const standalone = process.env.NEXT_PUBLIC_STANDALONE === "true";
 
 export function proxy(request: NextRequest) {
-  const sessionToken = request.cookies.get("better-auth.session_token");
+  const sessionToken =
+    request.cookies.get("better-auth.session_token") ||
+    request.cookies.get("__Secure-better-auth.session_token");
   const { pathname } = request.nextUrl;
 
   const isAuthPage = pathname === "/sign-in" || pathname === "/sign-up";
