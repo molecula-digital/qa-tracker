@@ -10,7 +10,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -175,10 +174,9 @@ export default function DashboardLayout({
                     <ChevronsUpDown size={12} className="text-neutral-500 shrink-0 group-hover:text-neutral-300" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  <p className="px-2 py-1.5 text-xs text-muted-foreground">
                     Switch workspace
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+                  </p>
                   {orgs.map((org) => (
                     <DropdownMenuItem
                       key={org.id}
@@ -230,22 +228,21 @@ export default function DashboardLayout({
 
                 return (
                   <li key={item.label}>
-                    <Button
-                      variant="ghost"
-                      className={`w-full h-8 ${
-                        collapsed ? "justify-center px-2" : "justify-start"
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-2 w-full h-8 px-3 rounded-md text-sm transition-colors ${
+                        collapsed ? "justify-center px-2" : ""
                       } ${
                         isActive
                           ? "bg-neutral-800 text-neutral-100"
                           : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
                       }`}
-                      render={<Link href={item.href} />}
                     >
                       <Icon size={16} className="shrink-0" />
                       {!collapsed && (
-                        <span className="ml-2 text-sm">{item.label}</span>
+                        <span>{item.label}</span>
                       )}
-                    </Button>
+                    </Link>
                   </li>
                 );
               })}
