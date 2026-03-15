@@ -14,6 +14,7 @@ const stripeClient = new Stripe(
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
+  baseURL: process.env.BETTER_AUTH_URL,
   emailAndPassword: {
     enabled: true,
   },
