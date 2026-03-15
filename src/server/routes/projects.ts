@@ -2,8 +2,8 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { db } from "@/server/db";
-import { project } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { project, section, item, activity } from "@/server/db/schema";
+import { eq, and, sql, gte } from "drizzle-orm";
 import { requireOrg, type OrgEnv } from "@/server/middleware/org";
 import { canCreateProject } from "@/server/lib/plan-limits";
 import { sseManager } from "@/server/lib/sse-manager";
@@ -21,6 +21,67 @@ projects.get("/", async (c) => {
     .where(eq(project.organizationId, orgId))
     .orderBy(project.createdAt);
   return c.json(rows);
+});
+
+// Project stats for dashboard
+projects.get("/stats", async (c) => {
+  const orgId = c.get("organizationId");
+
+  // Get all org projects
+  const orgProjects = await db
+    .select()
+    .from(project)
+    .where(eq(project.organizationId, orgId))
+    .orderBy(project.updatedAt);
+
+  if (orgProjects.length === 0) return c.json([]);
+
+  const projectIds = orgProjects.map((p) => p.id);
+
+  // Aggregate section + item counts per project in one query
+  const statsRows = await db
+    .select({
+      projectId: section.projectId,
+      sectionCount: sql<number>`count(distinct ${section.id})`.as("section_count"),
+      itemCount: sql<number>`count(distinct ${item.id})`.as("item_count"),
+      doneCount: sql<number>`count(distinct case when ${item.checked} = true then ${item.id} end)`.as("done_count"),
+    })
+    .from(section)
+    .leftJoin(item, eq(item.sectionId, section.id))
+    .where(sql`${section.projectId} in ${projectIds}`)
+    .groupBy(section.projectId);
+
+  // Recent activity counts (last 7 days)
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const activityRows = await db
+    .select({
+      projectId: activity.projectId,
+      count: sql<number>`count(*)`.as("count"),
+    })
+    .from(activity)
+    .where(
+      and(
+        sql`${activity.projectId} in ${projectIds}`,
+        gte(activity.createdAt, sevenDaysAgo)
+      )
+    )
+    .groupBy(activity.projectId);
+
+  const statsMap = new Map(statsRows.map((r) => [r.projectId, r]));
+  const activityMap = new Map(activityRows.map((r) => [r.projectId, Number(r.count)]));
+
+  const result = orgProjects.map((p) => {
+    const s = statsMap.get(p.id);
+    return {
+      ...p,
+      sectionCount: Number(s?.sectionCount ?? 0),
+      itemCount: Number(s?.itemCount ?? 0),
+      doneCount: Number(s?.doneCount ?? 0),
+      recentActivityCount: activityMap.get(p.id) ?? 0,
+    };
+  });
+
+  return c.json(result);
 });
 
 // Get single project

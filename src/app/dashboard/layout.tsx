@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { useSession, organization } from "@/lib/auth-client";
+import { useSession, signOut, organization } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -24,6 +24,7 @@ import {
   ChevronsUpDown,
   Plus,
   Building2,
+  LogOut,
 } from "lucide-react";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
@@ -256,15 +257,51 @@ export default function DashboardLayout({
 
         {/* User */}
         {!collapsed && (
-          <div className="px-3 pb-3 flex items-center gap-2">
-            <Avatar className="w-6 h-6">
-              <AvatarFallback className="text-[10px] bg-accent text-foreground">
-                {session?.user?.name?.charAt(0)?.toUpperCase() || "?"}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-xs text-muted-foreground truncate">
-              {session?.user?.email}
-            </span>
+          <div className="px-3 pb-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md hover:bg-accent/50 transition-colors group">
+                <Avatar className="w-6 h-6 shrink-0">
+                  <AvatarFallback className="text-[10px] bg-accent text-foreground">
+                    {session?.user?.name?.charAt(0)?.toUpperCase() || "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs text-muted-foreground truncate flex-1 text-left">
+                  {session?.user?.email}
+                </span>
+                <ChevronsUpDown size={12} className="text-muted-foreground shrink-0 group-hover:text-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top" className="w-56">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium">{session?.user?.name}</p>
+                  <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await signOut();
+                    router.push("/sign-in");
+                  }}
+                  className="gap-2 text-destructive focus:text-destructive"
+                >
+                  <LogOut size={14} />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+        {collapsed && (
+          <div className="flex justify-center pb-3">
+            <button
+              onClick={async () => {
+                await signOut();
+                router.push("/sign-in");
+              }}
+              className="text-muted-foreground hover:text-destructive transition-colors"
+              title="Sign out"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         )}
       </aside>
