@@ -3,92 +3,101 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut, organization } from "@/lib/auth-client";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Building2, AlertTriangle } from "lucide-react";
 
-interface Member {
+interface OrgData {
   id: string;
-  user: { name: string; email: string };
-  role: string;
+  name: string;
+  slug: string;
+  logo?: string | null;
 }
 
 export default function SettingsPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [members, setMembers] = useState<Member[]>([]);
-  const [membersLoading, setMembersLoading] = useState(true);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"member" | "admin">("member");
-  const [inviteError, setInviteError] = useState<string | null>(null);
-  const [inviteSuccess, setInviteSuccess] = useState(false);
-  const [inviteLoading, setInviteLoading] = useState(false);
 
-  const loadMembers = useCallback(async () => {
+  const [org, setOrg] = useState<OrgData | null>(null);
+  const [orgLoading, setOrgLoading] = useState(true);
+
+  // Org edit state
+  const [orgName, setOrgName] = useState("");
+  const [orgSlug, setOrgSlug] = useState("");
+  const [orgSaving, setOrgSaving] = useState(false);
+  const [orgSaved, setOrgSaved] = useState(false);
+
+  // Delete dialog
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const loadOrg = useCallback(async () => {
     try {
       const result = await organization.getFullOrganization();
-      if (result.data?.members) {
-        setMembers(result.data.members as unknown as Member[]);
+      if (result.data) {
+        const data = {
+          id: result.data.id,
+          name: result.data.name,
+          slug: result.data.slug,
+          logo: result.data.logo,
+        };
+        setOrg(data);
+        setOrgName(data.name);
+        setOrgSlug(data.slug);
       }
     } catch {
       // silently fail
     } finally {
-      setMembersLoading(false);
+      setOrgLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadMembers();
-  }, [loadMembers]);
+    loadOrg();
+  }, [loadOrg]);
 
-  async function handleInvite(e: React.FormEvent) {
+  async function handleSaveOrg(e: React.FormEvent) {
     e.preventDefault();
-    setInviteError(null);
-    setInviteSuccess(false);
-    setInviteLoading(true);
-
+    if (!org) return;
+    setOrgSaving(true);
+    setOrgSaved(false);
     try {
-      const result = await organization.inviteMember({
-        email: inviteEmail,
-        role: inviteRole,
+      await organization.update({
+        data: {
+          name: orgName,
+          slug: orgSlug,
+        },
       });
-
-      if (result.error) {
-        setInviteError(
-          result.error.message ?? "Failed to send invite. Please try again."
-        );
-      } else {
-        setInviteSuccess(true);
-        setInviteEmail("");
-        loadMembers();
-      }
+      setOrgSaved(true);
+      loadOrg();
+      setTimeout(() => setOrgSaved(false), 3000);
     } catch {
-      setInviteError("An unexpected error occurred. Please try again.");
+      // handle error
     } finally {
-      setInviteLoading(false);
+      setOrgSaving(false);
     }
   }
 
-  async function handleRoleChange(memberId: string, role: string | null) {
-    if (!role) return;
-    await organization.updateMemberRole({ memberId, role });
-    loadMembers();
-  }
-
-  async function handleRemove(memberIdOrEmail: string) {
-    await organization.removeMember({ memberIdOrEmail });
-    loadMembers();
+  async function handleDeleteOrg() {
+    if (!org || deleteConfirm !== org.name) return;
+    setDeleting(true);
+    try {
+      await organization.delete({ organizationId: org.id });
+      router.push("/dashboard/onboarding");
+    } catch {
+      setDeleting(false);
+    }
   }
 
   async function handleSignOut() {
@@ -97,26 +106,78 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="max-w-2xl space-y-6">
       <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
 
-      {/* Account section */}
+      {/* Workspace settings */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Building2 size={16} className="text-muted-foreground" />
+            <div>
+              <CardTitle className="text-base">Workspace</CardTitle>
+              <CardDescription className="text-xs">
+                Manage your organization settings
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {orgLoading ? (
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          ) : org ? (
+            <form onSubmit={handleSaveOrg} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="org-name">Workspace name</Label>
+                <Input
+                  id="org-name"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-slug">URL slug</Label>
+                <Input
+                  id="org-slug"
+                  value={orgSlug}
+                  onChange={(e) => setOrgSlug(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used in URLs and invitations
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button type="submit" disabled={orgSaving} size="sm">
+                  {orgSaving ? "Saving..." : "Save changes"}
+                </Button>
+                {orgSaved && (
+                  <span className="text-xs text-emerald-400">Saved</span>
+                )}
+              </div>
+            </form>
+          ) : (
+            <p className="text-sm text-muted-foreground">No workspace found.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Account */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Account</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Name</p>
-            <p className="text-sm text-foreground">
-              {session?.user?.name ?? "--"}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Email</p>
-            <p className="text-sm text-foreground">
-              {session?.user?.email ?? "--"}
-            </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Name</p>
+              <p className="text-sm text-foreground">{session?.user?.name ?? "--"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Email</p>
+              <p className="text-sm text-foreground">{session?.user?.email ?? "--"}</p>
+            </div>
           </div>
           <Separator />
           <Button variant="outline" size="sm" onClick={handleSignOut}>
@@ -125,133 +186,67 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Team members */}
-      <Card>
+      {/* Danger zone */}
+      <Card className="border-red-900/50">
         <CardHeader>
-          <CardTitle className="text-base">Team members</CardTitle>
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} className="text-red-400" />
+            <div>
+              <CardTitle className="text-base text-red-400">Danger zone</CardTitle>
+              <CardDescription className="text-xs">
+                Irreversible actions
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {membersLoading ? (
-            <p className="text-sm text-neutral-500">Loading members...</p>
-          ) : members.length === 0 ? (
-            <p className="text-sm text-neutral-500">No members found.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {members.map((member) => (
-                <li
-                  key={member.id}
-                  className="flex items-center justify-between py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-8 h-8">
-                      <AvatarFallback className="text-xs bg-neutral-800 text-neutral-300">
-                        {member.user.name?.charAt(0)?.toUpperCase() || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {member.user.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {member.user.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {member.role !== "owner" && (
-                      <>
-                        <Select
-                          value={member.role}
-                          onValueChange={(role) =>
-                            handleRoleChange(member.id, role)
-                          }
-                        >
-                          <SelectTrigger className="w-24 h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="member">Member</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-400 hover:text-red-300"
-                          onClick={() => handleRemove(member.id)}
-                        >
-                          Remove
-                        </Button>
-                      </>
-                    )}
-                    {member.role === "owner" && (
-                      <Badge variant="outline" className="capitalize">
-                        Owner
-                      </Badge>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <p className="text-sm text-muted-foreground mb-3">
+            Deleting your workspace will permanently remove all projects, sections,
+            items, and member data. This action cannot be undone.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-red-800 text-red-400 hover:bg-red-950 hover:text-red-300"
+            onClick={() => setDeleteOpen(true)}
+          >
+            Delete workspace
+          </Button>
         </CardContent>
       </Card>
 
-      {/* Invite form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Invite a team member</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {inviteError && (
-            <div className="mb-4 rounded-md border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-400">
-              {inviteError}
-            </div>
-          )}
-
-          {inviteSuccess && (
-            <div className="mb-4 rounded-md border border-green-800 bg-green-950 px-4 py-3 text-sm text-green-400">
-              Invitation sent successfully.
-            </div>
-          )}
-
-          <form onSubmit={handleInvite} className="flex items-end gap-3">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="invite-email">Email</Label>
-              <Input
-                id="invite-email"
-                type="email"
-                required
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="teammate@example.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="invite-role">Role</Label>
-              <Select
-                value={inviteRole}
-                onValueChange={(value) =>
-                  setInviteRole(value as "member" | "admin")
-                }
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="bg-neutral-900 border-neutral-800 max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-red-400">Delete workspace</DialogTitle>
+            <DialogDescription>
+              This will permanently delete <strong>{org?.name}</strong> and all its data.
+              Type the workspace name to confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <Input
+              placeholder={org?.name}
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setDeleteOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={deleteConfirm !== org?.name || deleting}
+                onClick={handleDeleteOrg}
               >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
+                {deleting ? "Deleting..." : "Delete permanently"}
+              </Button>
             </div>
-
-            <Button type="submit" disabled={inviteLoading}>
-              {inviteLoading ? "Sending..." : "Invite"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
