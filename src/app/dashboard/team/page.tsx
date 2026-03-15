@@ -22,7 +22,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserPlus, Mail, X, AlertTriangle } from "lucide-react";
+import { UserPlus, Mail, X, AlertTriangle, Building2 } from "lucide-react";
 
 interface Member {
   id: string;
@@ -41,6 +41,7 @@ interface Invitation {
 interface OrgInfo {
   id: string;
   name: string;
+  slug: string;
 }
 
 export default function TeamPage() {
@@ -54,6 +55,12 @@ export default function TeamPage() {
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
 
+  // Workspace edit state
+  const [orgName, setOrgName] = useState("");
+  const [orgSlug, setOrgSlug] = useState("");
+  const [orgSaving, setOrgSaving] = useState(false);
+  const [orgSaved, setOrgSaved] = useState(false);
+
   // Delete workspace state
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -63,7 +70,9 @@ export default function TeamPage() {
     try {
       const result = await organization.getFullOrganization();
       if (result.data) {
-        setCurrentOrg({ id: result.data.id, name: result.data.name });
+        setCurrentOrg({ id: result.data.id, name: result.data.name, slug: result.data.slug });
+        setOrgName(result.data.name);
+        setOrgSlug(result.data.slug);
       }
       if (result.data?.members) {
         setMembers(result.data.members as unknown as Member[]);
@@ -127,6 +136,25 @@ export default function TeamPage() {
     loadMembers();
   }
 
+  async function handleSaveOrg(e: React.FormEvent) {
+    e.preventDefault();
+    if (!currentOrg) return;
+    setOrgSaving(true);
+    setOrgSaved(false);
+    try {
+      await organization.update({
+        data: { name: orgName, slug: orgSlug },
+      });
+      setOrgSaved(true);
+      loadMembers();
+      setTimeout(() => setOrgSaved(false), 3000);
+    } catch {
+      // handle error
+    } finally {
+      setOrgSaving(false);
+    }
+  }
+
   async function handleDeleteOrg() {
     if (!currentOrg || deleteConfirm !== currentOrg.name) return;
     setDeleting(true);
@@ -153,6 +181,56 @@ export default function TeamPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <h1 className="text-2xl font-semibold text-foreground">Team</h1>
+
+      {/* Workspace settings */}
+      {currentOrg && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Building2 size={16} className="text-muted-foreground" />
+              <div>
+                <CardTitle className="text-base">Workspace</CardTitle>
+                <CardDescription className="text-xs">
+                  Manage your organization settings
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSaveOrg} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="org-name">Workspace name</Label>
+                <Input
+                  id="org-name"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-slug">URL slug</Label>
+                <Input
+                  id="org-slug"
+                  value={orgSlug}
+                  onChange={(e) => setOrgSlug(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used in URLs and invitations
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button type="submit" disabled={orgSaving} size="sm">
+                  {orgSaving ? "Saving..." : "Save changes"}
+                </Button>
+                {orgSaved && (
+                  <span className="text-xs text-emerald-400">Saved</span>
+                )}
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Members */}
       <Card>
