@@ -22,6 +22,13 @@
       "when": 1773589157879,
       "tag": "0002_fast_moondragon",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773590482404,
+      "tag": "0003_stiff_electro",
+      "breakpoints": true
     }
   ]
 }
