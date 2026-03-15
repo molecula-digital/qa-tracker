@@ -89,7 +89,9 @@ export default function BillingPage() {
 
   async function handleManage() {
     try {
-      const result = await subscription.cancel();
+      const result = await subscription.billingPortal({
+        returnUrl: "/dashboard/billing",
+      });
       if (result.data && typeof result.data === "object" && "url" in result.data) {
         window.location.href = result.data.url as string;
       }
