@@ -106,7 +106,7 @@ export default function TeamPage() {
                 <li key={member.id} className="flex items-center justify-between py-3">
                   <div className="flex items-center gap-3">
                     <Avatar className="w-8 h-8">
-                      <AvatarFallback className="text-xs bg-neutral-800 text-neutral-300">
+                      <AvatarFallback className="text-xs bg-accent text-foreground">
                         {member.user.name?.charAt(0)?.toUpperCase() || "?"}
                       </AvatarFallback>
                     </Avatar>

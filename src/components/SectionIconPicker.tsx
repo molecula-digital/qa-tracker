@@ -40,10 +40,10 @@ export function SectionIconPicker({ currentIcon, anchorEl, onSelect, onClose }: 
   return createPortal(
     <div
       ref={popoverRef}
-      className="absolute z-[9999] w-[248px] rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl"
+      className="absolute z-[9999] w-[248px] rounded-xl border border-border bg-popover p-3 shadow-xl"
       style={{ top, left }}
     >
-      <p className="text-[11px] text-neutral-500 uppercase tracking-wider font-semibold mb-2">
+      <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">
         Section icon
       </p>
 
@@ -83,8 +83,8 @@ export function SectionIconPicker({ currentIcon, anchorEl, onSelect, onClose }: 
               onClick={() => { onSelect(key); onClose() }}
               className={`w-8 h-8 p-0 ${
                 active
-                  ? 'bg-neutral-700 text-neutral-100 border border-neutral-500'
-                  : 'text-neutral-400 hover:text-neutral-200'
+                  ? 'bg-accent text-foreground border border-border'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <IconComp size={15} />

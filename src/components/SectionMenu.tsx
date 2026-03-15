@@ -29,8 +29,8 @@ export const SectionMenu = forwardRef<HTMLDivElement, SectionMenuProps>(function
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuItem onClick={onColor} className="gap-2">
           <span
-            className="w-3.5 h-3.5 rounded shrink-0 border border-neutral-600"
-            style={{ background: sectionColor || '#333' }}
+            className="w-3.5 h-3.5 rounded shrink-0 border border-border"
+            style={{ background: sectionColor || 'var(--kanban-header)' }}
           />
           Color
         </DropdownMenuItem>

@@ -97,7 +97,7 @@ export default function OnboardingPage() {
                 }}
                 placeholder="acme-inc"
               />
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-muted-foreground">
                 Used in URLs. Lowercase letters, numbers, and hyphens only.
               </p>
             </div>

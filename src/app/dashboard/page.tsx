@@ -41,7 +41,7 @@ export default function DashboardPage() {
   };
 
   if (isLoading) {
-    return <p className="text-neutral-500 text-sm">Loading projects...</p>;
+    return <p className="text-muted-foreground text-sm">Loading projects...</p>;
   }
 
   if (error) {
@@ -127,7 +127,7 @@ export default function DashboardPage() {
           {projects.map((project) => (
             <Card
               key={project.id}
-              className="group hover:border-neutral-500 transition-colors bg-card"
+              className="group hover:border-border transition-colors bg-card"
             >
               <CardContent className="p-5 flex items-center justify-between">
                 <Link
@@ -138,7 +138,7 @@ export default function DashboardPage() {
                     {project.name}
                   </p>
                   {project.description && (
-                    <p className="text-xs text-neutral-500 truncate mt-1">
+                    <p className="text-xs text-muted-foreground truncate mt-1">
                       {project.description}
                     </p>
                   )}

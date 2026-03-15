@@ -111,7 +111,7 @@ export default function BillingPage() {
         <h1 className="text-2xl font-semibold text-foreground mb-8">
           Billing
         </h1>
-        <p className="text-sm text-neutral-500">Loading plans...</p>
+        <p className="text-sm text-muted-foreground">Loading plans...</p>
       </div>
     );
   }
@@ -119,7 +119,7 @@ export default function BillingPage() {
   return (
     <div className="max-w-4xl">
       <h1 className="text-2xl font-semibold text-foreground mb-2">Billing</h1>
-      <p className="text-neutral-500 mb-8">
+      <p className="text-muted-foreground mb-8">
         Manage your subscription and billing details.
       </p>
 
@@ -144,7 +144,7 @@ export default function BillingPage() {
                     {plan.price}
                   </span>
                   {plan.period && (
-                    <span className="text-sm text-neutral-500">{plan.period}</span>
+                    <span className="text-sm text-muted-foreground">{plan.period}</span>
                   )}
                 </div>
               </CardHeader>
@@ -175,7 +175,7 @@ export default function BillingPage() {
                       <Button
                         variant="link"
                         size="sm"
-                        className="text-neutral-500"
+                        className="text-muted-foreground"
                         onClick={handleManage}
                       >
                         Manage subscription

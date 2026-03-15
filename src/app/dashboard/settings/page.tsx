@@ -217,7 +217,7 @@ export default function SettingsPage() {
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="bg-neutral-900 border-neutral-800 max-w-sm">
+        <DialogContent className="bg-card border-border max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-red-400">Delete workspace</DialogTitle>
             <DialogDescription>

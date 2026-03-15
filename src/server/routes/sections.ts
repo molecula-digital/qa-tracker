@@ -7,6 +7,7 @@ import { eq, and } from "drizzle-orm";
 import { requireOrg, type OrgEnv } from "@/server/middleware/org";
 import { canCreateSection } from "@/server/lib/plan-limits";
 import { sseManager } from "@/server/lib/sse-manager";
+import { logActivity } from "@/server/lib/log-activity";
 
 const sections = new Hono<OrgEnv>();
 
@@ -90,6 +91,16 @@ sections.post(
       })
       .returning();
     sseManager.broadcast(body.projectId, { type: "invalidate", entity: "sections" });
+    const user = c.get("user");
+    logActivity({
+      projectId: body.projectId,
+      actorId: user.id,
+      actorName: user.name ?? user.email,
+      action: "created",
+      entity: "section",
+      entityId: id,
+      description: `Created section "${body.title}"`,
+    });
     return c.json(row, 201);
   }
 );
@@ -126,6 +137,17 @@ sections.put(
       .where(eq(section.id, id))
       .returning();
     sseManager.broadcast(row.projectId, { type: "invalidate", entity: "sections" });
+    const user = c.get("user");
+    const changes = [body.title && "title", body.color !== undefined && "color", body.icon !== undefined && "icon", body.order !== undefined && "order"].filter(Boolean).join(", ");
+    logActivity({
+      projectId: row.projectId,
+      actorId: user.id,
+      actorName: user.name ?? user.email,
+      action: "updated",
+      entity: "section",
+      entityId: id,
+      description: `Updated section "${row.title}" (${changes || "properties"})`,
+    });
     return c.json(row);
   }
 );
@@ -145,6 +167,16 @@ sections.delete("/:id", async (c) => {
 
   await db.delete(section).where(eq(section.id, id));
   sseManager.broadcast(existing.section.projectId, { type: "invalidate", entity: "sections" });
+  const user = c.get("user");
+  logActivity({
+    projectId: existing.section.projectId,
+    actorId: user.id,
+    actorName: user.name ?? user.email,
+    action: "deleted",
+    entity: "section",
+    entityId: id,
+    description: `Deleted section "${existing.section.title}"`,
+  });
   return c.json({ success: true });
 });
 

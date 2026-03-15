@@ -6,6 +6,7 @@ import { note, item, section, project } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireOrg, type OrgEnv } from "@/server/middleware/org";
 import { sseManager } from "@/server/lib/sse-manager";
+import { logActivity } from "@/server/lib/log-activity";
 
 const notes = new Hono<OrgEnv>();
 
@@ -84,7 +85,18 @@ notes.post(
       })
       .returning();
     const projectId = await getProjectIdFromItem(body.itemId);
-    if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "notes" });
+    if (projectId) {
+      sseManager.broadcast(projectId, { type: "invalidate", entity: "notes" });
+      logActivity({
+        projectId,
+        actorId: user.id,
+        actorName: user.name ?? user.email,
+        action: "created",
+        entity: "note",
+        entityId: id,
+        description: `Added a note on an item`,
+      });
+    }
     return c.json(row, 201);
   }
 );
@@ -104,7 +116,19 @@ notes.delete("/:id", async (c) => {
 
   await db.delete(note).where(eq(note.id, id));
   const projectId = await getProjectIdFromItem(existing.itemId);
-  if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "notes" });
+  if (projectId) {
+    sseManager.broadcast(projectId, { type: "invalidate", entity: "notes" });
+    const user = c.get("user");
+    logActivity({
+      projectId,
+      actorId: user.id,
+      actorName: user.name ?? user.email,
+      action: "deleted",
+      entity: "note",
+      entityId: id,
+      description: `Deleted a note`,
+    });
+  }
   return c.json({ success: true });
 });
 

@@ -8,6 +8,8 @@ import items from "./routes/items";
 import notes from "./routes/notes";
 import sse from "./routes/sse";
 import board from "./routes/board";
+import activityRoute from "./routes/activity";
+import projectLinksRoute from "./routes/project-links";
 
 const app = new Hono().basePath("/api");
 
@@ -25,6 +27,8 @@ app.route("/items", items);
 app.route("/notes", notes);
 app.route("/sse", sse);
 app.route("/board", board);
+app.route("/activity", activityRoute);
+app.route("/project-links", projectLinksRoute);
 
 export default app;
 export type AppType = typeof app;

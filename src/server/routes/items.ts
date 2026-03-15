@@ -6,6 +6,7 @@ import { item, itemTag, section, project } from "@/server/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { requireOrg, type OrgEnv } from "@/server/middleware/org";
 import { sseManager } from "@/server/lib/sse-manager";
+import { logActivity } from "@/server/lib/log-activity";
 
 const items = new Hono<OrgEnv>();
 
@@ -107,7 +108,19 @@ items.post(
       })
       .returning();
     const projectId = await getProjectId(body.sectionId);
-    if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+    if (projectId) {
+      sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+      const user = c.get("user");
+      logActivity({
+        projectId,
+        actorId: user.id,
+        actorName: user.name ?? user.email,
+        action: "created",
+        entity: "item",
+        entityId: id,
+        description: `Added item "${body.text}"`,
+      });
+    }
     return c.json({ ...row, tags: [] }, 201);
   }
 );
@@ -150,7 +163,26 @@ items.put(
       .where(eq(item.id, id))
       .returning();
     const projectId = await getProjectId(row.sectionId);
-    if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+    if (projectId) {
+      sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+      const user = c.get("user");
+      const action = body.checked !== undefined
+        ? (body.checked ? "checked" : "unchecked")
+        : "updated";
+      logActivity({
+        projectId,
+        actorId: user.id,
+        actorName: user.name ?? user.email,
+        action: action as "checked" | "unchecked" | "updated",
+        entity: "item",
+        entityId: id,
+        description: action === "checked"
+          ? `Checked off "${existing.text}"`
+          : action === "unchecked"
+          ? `Unchecked "${existing.text}"`
+          : `Updated item "${row.text}"`,
+      });
+    }
     return c.json(row);
   }
 );
@@ -169,7 +201,19 @@ items.delete("/:id", async (c) => {
 
   await db.delete(item).where(eq(item.id, id));
   const projectId = await getProjectId(existing.sectionId);
-  if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+  if (projectId) {
+    sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+    const user = c.get("user");
+    logActivity({
+      projectId,
+      actorId: user.id,
+      actorName: user.name ?? user.email,
+      action: "deleted",
+      entity: "item",
+      entityId: id,
+      description: `Deleted item "${existing.text}"`,
+    });
+  }
   return c.json({ success: true });
 });
 
@@ -207,7 +251,21 @@ items.post(
     }
 
     const projectId = await getProjectId(existing.sectionId);
-    if (projectId) sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+    if (projectId) {
+      sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+      const user = c.get("user");
+      logActivity({
+        projectId,
+        actorId: user.id,
+        actorName: user.name ?? user.email,
+        action: "updated",
+        entity: "tag",
+        entityId: id,
+        description: tags.length > 0
+          ? `Set tags [${tags.join(", ")}] on "${existing.text}"`
+          : `Cleared tags on "${existing.text}"`,
+      });
+    }
     return c.json({ tags });
   }
 );

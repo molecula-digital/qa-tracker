@@ -17,6 +17,17 @@ function darkenColor(hex: string): string {
   return `rgb(${Math.round(r * 0.35)}, ${Math.round(g * 0.35)}, ${Math.round(b * 0.35)})`
 }
 
+function getHeaderColor(hex: string | undefined, isDark: boolean): string {
+  if (!hex) return 'var(--kanban-header)'
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  if (isDark) {
+    return `rgb(${Math.round(r * 0.35)}, ${Math.round(g * 0.35)}, ${Math.round(b * 0.35)})`
+  }
+  return `rgb(${Math.round(r * 0.85 + 38)}, ${Math.round(g * 0.85 + 38)}, ${Math.round(b * 0.85 + 38)})`
+}
+
 const TAG_COLORS: Record<TagKey, string> = {
   bug: '#e05555',
   question: '#d4a020',
@@ -52,6 +63,8 @@ export function KanbanBoard({
   const [dropIndex, setDropIndex] = useState<number | null>(null)
   const isDraggingAny = dragIndex !== null
 
+  const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
+
   const handleDrop = (toIndex: number) => {
     if (dragIndex !== null && dragIndex !== toIndex) onReorder(dragIndex, toIndex)
     setDragIndex(null)
@@ -59,7 +72,7 @@ export function KanbanBoard({
   }
 
   return (
-    <div style={{ display: 'flex', gap: 12, overflowX: 'auto', alignItems: 'flex-start', paddingBottom: 24, paddingTop: 4, height: '100%' }}>
+    <div className="flex gap-3 overflow-x-auto items-start pb-6 pt-1 h-full">
       <AnimatePresence initial={false}>
         {sections.map((section, i) => (
           <motion.div
@@ -69,7 +82,7 @@ export function KanbanBoard({
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.88, x: -24 }}
             transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-            style={{ flexShrink: 0 }}
+            className="shrink-0"
           >
             <KanbanColumn
               section={section}
@@ -80,6 +93,7 @@ export function KanbanBoard({
               isDragging={dragIndex === i}
               isDropTarget={dropIndex === i && dragIndex !== i}
               isDraggingAny={isDraggingAny}
+              isDark={isDark}
               onDragStart={() => setDragIndex(i)}
               onDragOver={() => setDropIndex(i)}
               onDragEnd={() => { setDragIndex(null); setDropIndex(null) }}
@@ -115,6 +129,7 @@ interface KanbanColumnProps {
   isDragging: boolean
   isDropTarget: boolean
   isDraggingAny: boolean
+  isDark: boolean
   onDragStart: () => void
   onDragOver: () => void
   onDragEnd: () => void
@@ -134,7 +149,7 @@ interface KanbanColumnProps {
 }
 
 function KanbanColumn({
-  section, search, isNew, isDragging, isDropTarget, isDraggingAny,
+  section, search, isNew, isDragging, isDropTarget, isDraggingAny, isDark,
   onDragStart, onDragOver, onDragEnd, onDrop,
   onToggleItem, onAddItem, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateTitle, onColorChange, onIconChange,
@@ -192,13 +207,7 @@ function KanbanColumn({
     setConfirmDeleteSection(false)
   }
 
-  const borderStyle = isDropTarget
-    ? '2px dashed #7a8c5c'
-    : isDragging
-    ? '2px dashed rgba(255,255,255,0.15)'
-    : isDraggingAny
-    ? '2px dashed rgba(255,255,255,0.1)'
-    : '2px solid rgba(255,255,255,0.06)'
+  const headerColor = getHeaderColor(section.color, isDark)
 
   return (
     <div
@@ -207,29 +216,29 @@ function KanbanColumn({
       onDragOver={(e) => { e.preventDefault(); onDragOver() }}
       onDragEnd={onDragEnd}
       onDrop={(e) => { e.preventDefault(); onDrop() }}
-      style={{
-        width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column',
-        background: '#1a1a1a', border: borderStyle, borderRadius: 14,
-        boxShadow: isDragging ? '0 12px 32px rgba(0,0,0,0.5)' : '0 1px 4px rgba(0,0,0,0.3)',
-        opacity: isDragging ? 0.6 : 1,
-        transition: 'box-shadow 0.15s, opacity 0.15s, border-color 0.15s',
-      }}
+      className={`w-[300px] shrink-0 flex flex-col bg-kanban-column rounded-[14px] transition-[box-shadow,opacity,border-color] duration-150 ${
+        isDragging ? 'opacity-60 shadow-xl' : 'shadow-sm'
+      } ${
+        isDropTarget
+          ? 'border-2 border-dashed border-emerald-600'
+          : isDragging
+          ? 'border-2 border-dashed border-border'
+          : isDraggingAny
+          ? 'border-2 border-dashed border-border/50'
+          : 'border-2 border-kanban-border'
+      }`}
     >
       {/* Header */}
       <motion.div
         animate={isNew
-          ? { backgroundColor: ['#2d4a1e', '#264016', section.color ? darkenColor(section.color) : '#2a2a2a'] }
-          : { backgroundColor: section.color ? darkenColor(section.color) : '#2a2a2a' }
+          ? { backgroundColor: ['#2d4a1e', '#264016', headerColor] }
+          : { backgroundColor: headerColor }
         }
         transition={{ duration: 1.2, ease: 'easeOut' }}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px',
-          borderRadius: '12px 12px 0 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
-          cursor: 'grab', userSelect: 'none',
-        }}
+        className="flex items-center gap-1.5 px-3 py-2.5 rounded-t-[12px] border-b border-border/30 cursor-grab select-none"
       >
         {SectionIcon && (
-          <span style={{ display: 'flex', alignItems: 'center', color: '#8fa870', flexShrink: 0 }}>
+          <span className="flex items-center text-emerald-600 dark:text-emerald-400/70 shrink-0">
             <SectionIcon size={14} />
           </span>
         )}
@@ -240,14 +249,16 @@ function KanbanColumn({
           onBlur={(e) => onUpdateTitle(e.target.value)}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
-          style={{ flex: 1, fontSize: 13, fontWeight: 700, border: 'none', background: 'transparent', outline: 'none', color: '#e5e5e5', fontFamily: 'inherit', cursor: 'text', minWidth: 0, padding: '1px 2px' }}
+          className="flex-1 text-[13px] font-bold border-none bg-transparent outline-none text-foreground font-[inherit] cursor-text min-w-0 px-0.5 py-px"
         />
         {allDone && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#4ade80', fontWeight: 600, flexShrink: 0 }}>
+          <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold shrink-0">
             <CheckCircle2 size={12} /> Done
           </span>
         )}
-        <span style={{ fontSize: 11, borderRadius: 99, padding: '1px 7px', flexShrink: 0, whiteSpace: 'nowrap', background: allDone ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.1)', color: allDone ? '#4ade80' : '#e5e5e5' }}>
+        <span className={`text-[11px] rounded-full px-[7px] py-px shrink-0 whitespace-nowrap ${
+          allDone ? 'bg-emerald-500/15 text-emerald-500' : 'bg-foreground/10 text-foreground'
+        }`}>
           {done}/{total}
         </span>
         <Button
@@ -257,14 +268,14 @@ function KanbanColumn({
           title="Section options"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v) }}
-          className="w-6 h-5 p-0 text-neutral-500 hover:text-neutral-300 shrink-0 text-[15px] tracking-wider"
+          className="w-6 h-5 p-0 text-muted-foreground hover:text-foreground shrink-0 text-[15px] tracking-wider"
         >
           ···
         </Button>
       </motion.div>
 
       {/* Reorder + section actions bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+      <div className="flex items-center justify-between px-2 py-1 border-b border-border/20">
         <div className="flex gap-0.5">
           <Button
             variant="ghost"
@@ -272,7 +283,7 @@ function KanbanColumn({
             onClick={onMoveLeft}
             disabled={!onMoveLeft}
             title="Move left"
-            className="w-6 h-6 p-0 text-neutral-500 hover:text-neutral-300 disabled:text-neutral-700 disabled:opacity-100"
+            className="w-6 h-6 p-0 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/30 disabled:opacity-100"
           >
             <ChevronLeft size={14} />
           </Button>
@@ -282,7 +293,7 @@ function KanbanColumn({
             onClick={onMoveRight}
             disabled={!onMoveRight}
             title="Move right"
-            className="w-6 h-6 p-0 text-neutral-500 hover:text-neutral-300 disabled:text-neutral-700 disabled:opacity-100"
+            className="w-6 h-6 p-0 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/30 disabled:opacity-100"
           >
             <ChevronRight size={14} />
           </Button>
@@ -303,7 +314,7 @@ function KanbanColumn({
             size="sm"
             onClick={handleDeleteSection}
             title="Delete section"
-            className="w-6 h-6 p-0 text-neutral-600 hover:text-red-400"
+            className="w-6 h-6 p-0 text-muted-foreground hover:text-red-400"
           >
             <Trash2 size={12} />
           </Button>
@@ -311,7 +322,7 @@ function KanbanColumn({
       </div>
 
       {/* Cards list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-0">
         <AnimatePresence initial={false}>
           {filtered.map((item) => (
             <motion.div
@@ -321,7 +332,7 @@ function KanbanColumn({
               animate={{ opacity: 1, height: 'auto', marginBottom: 6 }}
               exit={{ opacity: 0, height: 0, marginBottom: 0, scale: 0.95 }}
               transition={{ duration: 0.18, ease: 'easeInOut' }}
-              style={{ overflow: 'hidden' }}
+              className="overflow-hidden"
             >
               <KanbanCard
                 item={item}
@@ -335,15 +346,15 @@ function KanbanColumn({
           ))}
         </AnimatePresence>
         {filtered.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 12px', color: '#555' }}>
+          <div className="flex flex-col items-center gap-2 py-6 px-3 text-muted-foreground">
             <ClipboardList size={28} strokeWidth={1.4} />
-            <span style={{ fontSize: 12 }}>{search ? 'No matches' : 'No items yet'}</span>
+            <span className="text-xs">{search ? 'No matches' : 'No items yet'}</span>
             {!search && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => addInputRef.current?.focus()}
-                className="h-7 text-[11px] border-dashed border-neutral-700 text-neutral-500"
+                className="h-7 text-[11px] border-dashed border-border text-muted-foreground"
               >
                 + Add first item
               </Button>
@@ -353,15 +364,15 @@ function KanbanColumn({
       </div>
 
       {/* Add item */}
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', padding: '8px', borderRadius: '0 0 12px 12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div className="border-t border-border/30 p-2 rounded-b-[12px]">
+        <div className="flex items-center gap-1.5">
           <input
             ref={addInputRef}
             value={addInputVal}
             onChange={(e) => setAddInputVal(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') commitAdd(); if (e.key === 'Escape') setAddInputVal('') }}
             placeholder="Add item…"
-            style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 12, color: '#e5e5e5', outline: 'none', fontFamily: 'inherit', padding: '2px 0' }}
+            className="flex-1 border-none bg-transparent text-xs text-foreground outline-none font-[inherit] py-0.5"
           />
           {addInputVal.trim() && (
             <Button onClick={commitAdd} size="sm" className="h-6 px-2 text-[11px] gap-1 bg-emerald-700 hover:bg-emerald-600 text-white shrink-0">
@@ -431,16 +442,18 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
   }
 
   return (
-    <div style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: 10, padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+    <div className="bg-kanban-card border border-kanban-border rounded-[10px] px-[11px] py-[9px] flex flex-col gap-1.5 shadow-sm">
 
       {/* Main row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
+      <div className="flex items-start gap-[7px]">
         <Checkbox
           checked={item.checked}
           onCheckedChange={onToggle}
           className="mt-0.5 shrink-0"
         />
-        <span style={{ flex: 1, fontSize: 13, color: item.checked ? '#666' : '#e5e5e5', textDecoration: item.checked ? 'line-through' : 'none', lineHeight: 1.4, wordBreak: 'break-word' }}>
+        <span className={`flex-1 text-[13px] leading-[1.4] break-words ${
+          item.checked ? 'text-muted-foreground line-through' : 'text-foreground'
+        }`}>
           {item.text}
         </span>
         {confirmDelete ? (
@@ -459,7 +472,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
             size="sm"
             onClick={handleDelete}
             title="Delete item"
-            className="w-5 h-5 p-0 text-neutral-600 hover:text-red-400 shrink-0"
+            className="w-5 h-5 p-0 text-muted-foreground hover:text-red-400 shrink-0"
           >
             <Trash2 size={12} />
           </Button>
@@ -468,10 +481,10 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
 
       {/* Tag pills */}
       {tagCount > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, paddingLeft: 22 }}>
+        <div className="flex flex-wrap gap-1 pl-[22px]">
           {item.tags.map((tag) => (
-            <span key={tag} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 99, background: TAG_COLORS[tag] + '22', color: TAG_COLORS[tag], border: `1px solid ${TAG_COLORS[tag]}44` }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: TAG_COLORS[tag] }} />
+            <span key={tag} style={{ background: TAG_COLORS[tag] + '22', color: TAG_COLORS[tag], borderColor: TAG_COLORS[tag] + '44' }} className="inline-flex items-center gap-[3px] text-[10px] font-medium px-1.5 py-px rounded-full border">
+              <span style={{ background: TAG_COLORS[tag] }} className="w-[5px] h-[5px] rounded-full" />
               {tag}
             </span>
           ))}
@@ -486,7 +499,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
           size="sm"
           onClick={() => onOpenTagPicker(tagBtnRef.current!, item)}
           title="Tags"
-          className={`h-6 px-1.5 text-[10px] gap-1 ${tagCount > 0 ? 'text-emerald-500' : 'text-neutral-600'}`}
+          className={`h-6 px-1.5 text-[10px] gap-1 ${tagCount > 0 ? 'text-emerald-500' : 'text-muted-foreground'}`}
         >
           <Tag size={13} />
           {tagCount > 0 && <span className="font-medium">{tagCount}</span>}
@@ -496,7 +509,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
           size="sm"
           onClick={() => setShowNotes((v) => !v)}
           title="Comments"
-          className={`h-6 px-1.5 text-[10px] gap-1 ${noteCount > 0 ? 'text-blue-400' : 'text-neutral-600'}`}
+          className={`h-6 px-1.5 text-[10px] gap-1 ${noteCount > 0 ? 'text-blue-400' : 'text-muted-foreground'}`}
         >
           <MessageSquare size={13} />
           {noteCount > 0 && <span className="font-medium">{noteCount}</span>}
@@ -511,40 +524,40 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.18 }}
-            style={{ overflow: 'hidden' }}
+            className="overflow-hidden"
           >
-            <div style={{ paddingLeft: 22, paddingTop: 6, borderTop: '1px solid #2a2a2a' }}>
+            <div className="pl-[22px] pt-1.5 border-t border-kanban-border">
               {noteCount > 0 && (
-                <div style={{ marginBottom: 8 }}>
+                <div className="mb-2">
                   {item.notes.map((note: Note, idx) => (
                     <div key={note.id}>
                       {idx > 0 && (
-                        <div style={{ marginLeft: 5, width: 1, height: 10, background: '#333' }} />
+                        <div className="ml-[5px] w-px h-[10px] bg-kanban-border" />
                       )}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <div className="flex items-start gap-2">
                         <Avatar className="w-5 h-5 shrink-0 mt-0.5">
-                          <AvatarFallback className="text-[8px] bg-neutral-700 text-neutral-300">
+                          <AvatarFallback className="text-[8px] bg-muted text-muted-foreground">
                             U
                           </AvatarFallback>
                         </Avatar>
-                        <div style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
-                          <p style={{ fontSize: 11, color: '#ccc', lineHeight: 1.45, margin: 0, wordBreak: 'break-word' }}>{note.text}</p>
-                          <span style={{ fontSize: 9, color: '#555', marginTop: 2, display: 'block', letterSpacing: '0.01em' }}>{formatTs(note.ts)}</span>
+                        <div className="flex-1 min-w-0 pb-0.5">
+                          <p className="text-[11px] text-foreground/80 leading-[1.45] m-0 break-words">{note.text}</p>
+                          <span className="text-[9px] text-muted-foreground mt-0.5 block tracking-[0.01em]">{formatTs(note.ts)}</span>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => onDeleteNote(note.id)} title="Delete comment" className="w-5 h-5 p-0 text-neutral-600 hover:text-red-400 shrink-0">×</Button>
+                        <Button variant="ghost" size="sm" onClick={() => onDeleteNote(note.id)} title="Delete comment" className="w-5 h-5 p-0 text-muted-foreground hover:text-red-400 shrink-0">&times;</Button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              <div style={{ display: 'flex', gap: 5, paddingBottom: 4 }}>
+              <div className="flex gap-[5px] pb-1">
                 <input
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') commitNote(); if (e.key === 'Escape') setShowNotes(false) }}
                   placeholder="Write a comment…"
                   autoFocus
-                  style={{ flex: 1, fontSize: 11, border: '1px solid #333', borderRadius: 6, padding: '4px 7px', outline: 'none', fontFamily: 'inherit', color: '#e5e5e5', background: '#0a0a0a' }}
+                  className="flex-1 text-[11px] border border-kanban-border rounded-md px-[7px] py-1 outline-none font-[inherit] text-foreground bg-kanban-input-bg"
                 />
                 {noteText.trim() && (
                   <Button onClick={commitNote} size="sm" className="h-6 px-2 text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white shrink-0">

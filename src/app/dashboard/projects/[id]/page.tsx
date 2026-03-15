@@ -2,11 +2,15 @@
 
 import { use, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { Search, Plus, X, BarChart3, CheckCircle2, LayoutGrid, ListTodo } from "lucide-react";
+import {
+  Search, Plus, X, CheckCircle2, LayoutGrid, ListTodo,
+  Activity, Clock, User, TrendingUp,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/hooks/use-projects";
 import { useBoard } from "@/hooks/use-board";
 import { useSSE } from "@/hooks/use-sse";
+import { useActivity, type Activity as ActivityType } from "@/hooks/use-activity";
 import {
   useCreateSection,
   useUpdateSection,
@@ -22,15 +26,235 @@ import { useCreateNote, useDeleteNote } from "@/hooks/use-notes";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TagPicker } from "@/components/TagPicker";
 import { EmptyState } from "@/components/EmptyState";
+import { ProjectLinks } from "@/components/ProjectLinks";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { Item, TagKey } from "@/types/tracker";
+
+/* ── helpers ── */
+
+const ACTION_COLORS: Record<string, string> = {
+  created: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+  updated: "bg-blue-500/15 text-blue-400 border-blue-500/25",
+  deleted: "bg-red-500/15 text-red-400 border-red-500/25",
+  checked: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+  unchecked: "bg-amber-500/15 text-amber-400 border-amber-500/25",
+};
+
+const ENTITY_LABELS: Record<string, string> = {
+  section: "Section",
+  item: "Item",
+  note: "Note",
+  tag: "Tag",
+};
+
+function timeAgo(dateStr: string) {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+/* ── ActivityTable ── */
+
+function ActivityTable({ activities, isLoading }: { activities: ActivityType[]; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-muted-foreground text-sm">Loading activity...</p>
+      </div>
+    );
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <EmptyState
+          icon={Activity}
+          title="No activity yet"
+          subtitle="Actions on this project will appear here."
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="w-[140px]">Time</TableHead>
+            <TableHead className="w-[120px]">User</TableHead>
+            <TableHead className="w-[90px]">Action</TableHead>
+            <TableHead className="w-[80px]">Entity</TableHead>
+            <TableHead>Description</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {activities.map((a) => (
+            <TableRow key={a.id}>
+              <TableCell className="text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Clock size={12} />
+                  {timeAgo(a.createdAt)}
+                </span>
+              </TableCell>
+              <TableCell className="text-xs">
+                <span className="flex items-center gap-1.5">
+                  <User size={12} className="text-muted-foreground" />
+                  <span className="truncate max-w-[100px]">{a.actorName}</span>
+                </span>
+              </TableCell>
+              <TableCell>
+                <span
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium border ${ACTION_COLORS[a.action] ?? "bg-muted text-muted-foreground border-border"}`}
+                >
+                  {a.action}
+                </span>
+              </TableCell>
+              <TableCell>
+                <span className="text-xs text-muted-foreground">
+                  {ENTITY_LABELS[a.entity] ?? a.entity}
+                </span>
+              </TableCell>
+              <TableCell className="text-xs text-foreground max-w-[300px] truncate">
+                {a.description}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+/* ── StatsPanel ── */
+
+function StatsPanel({
+  stats,
+  progressPct,
+}: {
+  stats: {
+    done: number;
+    total: number;
+    sections: number;
+    perSection: { name: string; done: number; total: number }[];
+  };
+  progressPct: number;
+}) {
+  return (
+    <div className="space-y-6 p-1">
+      {/* Overview cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <LayoutGrid size={14} className="text-blue-400" />
+            <span className="text-xs uppercase tracking-wide font-medium">Sections</span>
+          </div>
+          <span className="text-2xl font-mono font-bold">{stats.sections}</span>
+        </div>
+        <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <ListTodo size={14} className="text-amber-400" />
+            <span className="text-xs uppercase tracking-wide font-medium">Total Items</span>
+          </div>
+          <span className="text-2xl font-mono font-bold">{stats.total}</span>
+        </div>
+        <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <CheckCircle2 size={14} className="text-emerald-500" />
+            <span className="text-xs uppercase tracking-wide font-medium">Completed</span>
+          </div>
+          <span className="text-2xl font-mono font-bold">{stats.done}</span>
+        </div>
+        <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <TrendingUp size={14} className="text-violet-400" />
+            <span className="text-xs uppercase tracking-wide font-medium">Progress</span>
+          </div>
+          <span className="text-2xl font-mono font-bold">{progressPct}%</span>
+        </div>
+      </div>
+
+      {/* Overall progress bar */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Overall completion</span>
+          <span className="font-mono">{stats.done} of {stats.total} items</span>
+        </div>
+        <div className="h-3 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Per-section breakdown */}
+      {stats.perSection.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-foreground">Section breakdown</h3>
+          <div className="border border-border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Section</TableHead>
+                  <TableHead className="w-[100px] text-right">Done</TableHead>
+                  <TableHead className="w-[100px] text-right">Total</TableHead>
+                  <TableHead className="w-[200px]">Progress</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats.perSection.map((sec) => {
+                  const pct = sec.total > 0 ? Math.round((sec.done / sec.total) * 100) : 0;
+                  return (
+                    <TableRow key={sec.name}>
+                      <TableCell className="font-medium text-sm">{sec.name}</TableCell>
+                      <TableCell className="text-right font-mono text-sm text-emerald-400">
+                        {sec.done}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm text-muted-foreground">
+                        {sec.total}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-emerald-500/80 transition-all duration-300"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-mono text-muted-foreground w-10 text-right">
+                            {pct}%
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProjectPage({
   params,
@@ -46,13 +270,12 @@ export default function ProjectPage({
     error: projectError,
   } = useProject(id);
   const { data: board, isLoading: loadingBoard } = useBoard(id);
+  const { data: activities = [], isLoading: loadingActivity } = useActivity(id);
   useSSE(id);
 
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [newestSectionId, setNewestSectionId] = useState<string | null>(null);
-
-  const [statsOpen, setStatsOpen] = useState(false);
 
   const [tagPickerState, setTagPickerState] = useState<{
     item: Item;
@@ -73,6 +296,7 @@ export default function ProjectPage({
 
   const invalidateBoard = useCallback(() => {
     qc.invalidateQueries({ queryKey: ["board", id] });
+    qc.invalidateQueries({ queryKey: ["activity", id] });
   }, [qc, id]);
 
   // Stats
@@ -258,7 +482,7 @@ export default function ProjectPage({
   if (loadingProject) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-neutral-500 text-sm">Loading project...</p>
+        <p className="text-muted-foreground text-sm">Loading project...</p>
       </div>
     );
   }
@@ -282,29 +506,32 @@ export default function ProjectPage({
         {/* Breadcrumb */}
         <Link
           href="/dashboard"
-          className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Projects
         </Link>
-        <span className="text-neutral-700 text-xs">/</span>
-        <span className="text-sm font-medium text-neutral-200 truncate max-w-[200px]">
+        <span className="text-muted-foreground/40 text-xs">/</span>
+        <span className="text-sm font-medium text-foreground truncate max-w-[200px]">
           {project.name}
         </span>
 
+        {/* Project links */}
+        <ProjectLinks projectId={id} />
+
         {/* Stats pill */}
         {stats.total > 0 && (
-          <div className="flex items-center gap-2 ml-2 px-2.5 py-1 rounded-md bg-neutral-800/60 border border-neutral-700/50">
+          <div className="flex items-center gap-2 ml-2 px-2.5 py-1 rounded-md bg-muted border border-border">
             <CheckCircle2 size={12} className="text-emerald-500" />
-            <span className="text-xs text-neutral-300 font-mono">
+            <span className="text-xs text-foreground font-mono">
               {stats.done}/{stats.total}
             </span>
-            <div className="w-16 h-1.5 rounded-full bg-neutral-700 overflow-hidden">
+            <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full bg-emerald-500 transition-all duration-300"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
-            <span className="text-[10px] text-neutral-500 font-mono">{progressPct}%</span>
+            <span className="text-[10px] text-muted-foreground font-mono">{progressPct}%</span>
           </div>
         )}
 
@@ -313,19 +540,19 @@ export default function ProjectPage({
 
         {/* Search toggle */}
         {searchOpen ? (
-          <div className="flex items-center gap-1.5 bg-neutral-800 border border-neutral-700 rounded-md px-2 h-7">
-            <Search size={12} className="text-neutral-500 shrink-0" />
+          <div className="flex items-center gap-1.5 bg-muted border border-border rounded-md px-2 h-7">
+            <Search size={12} className="text-muted-foreground shrink-0" />
             <input
               type="text"
               placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
-              className="w-32 text-xs bg-transparent text-neutral-200 placeholder:text-neutral-600 outline-none"
+              className="w-32 text-xs bg-transparent text-foreground placeholder:text-muted-foreground outline-none"
             />
             <button
               onClick={() => { setSearch(""); setSearchOpen(false); }}
-              className="text-neutral-500 hover:text-neutral-300"
+              className="text-muted-foreground hover:text-foreground"
             >
               <X size={12} />
             </button>
@@ -333,21 +560,12 @@ export default function ProjectPage({
         ) : (
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex items-center justify-center w-7 h-7 rounded-md text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800 transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             title="Search (Ctrl+F)"
           >
             <Search size={14} />
           </button>
         )}
-
-        {/* Stats button */}
-        <button
-          onClick={() => setStatsOpen(true)}
-          className="flex items-center justify-center w-7 h-7 rounded-md text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800 transition-colors"
-          title={`${stats.sections} sections, ${stats.total} items, ${stats.done} done`}
-        >
-          <BarChart3 size={14} />
-        </button>
 
         {/* Add section */}
         <Button
@@ -360,17 +578,18 @@ export default function ProjectPage({
         </Button>
       </div>
 
-      {/* Tabs: Board + Activity */}
+      {/* Tabs: Board + Activity + Stats */}
       <Tabs defaultValue="board" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="shrink-0 self-start bg-neutral-800 mb-2">
+        <TabsList className="shrink-0 self-start bg-muted mb-2">
           <TabsTrigger value="board">Board</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="stats">Stats</TabsTrigger>
         </TabsList>
 
         <TabsContent value="board" className="flex-1 overflow-hidden mt-0 -mx-4">
           {loadingBoard ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-neutral-500 text-sm">Loading board...</p>
+              <p className="text-muted-foreground text-sm">Loading board...</p>
             </div>
           ) : sections.length === 0 ? (
             <div className="h-full flex items-center justify-center">
@@ -405,72 +624,19 @@ export default function ProjectPage({
         </TabsContent>
 
         <TabsContent value="activity" className="flex-1 overflow-auto mt-0">
-          <div className="text-sm text-neutral-500 py-8 text-center">
-            Activity feed coming soon.
-          </div>
+          <ActivityTable activities={activities} isLoading={loadingActivity} />
+        </TabsContent>
+
+        <TabsContent value="stats" className="flex-1 overflow-auto mt-0">
+          {loadingBoard ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-muted-foreground text-sm">Loading stats...</p>
+            </div>
+          ) : (
+            <StatsPanel stats={stats} progressPct={progressPct} />
+          )}
         </TabsContent>
       </Tabs>
-
-      {/* Stats dialog */}
-      <Dialog open={statsOpen} onOpenChange={setStatsOpen}>
-        <DialogContent className="bg-neutral-900 border-neutral-800 text-neutral-100 max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold">Project Statistics</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-neutral-800/60 border border-neutral-700/50">
-                <LayoutGrid size={16} className="text-blue-400" />
-                <span className="text-lg font-mono font-bold">{stats.sections}</span>
-                <span className="text-[10px] text-neutral-500 uppercase tracking-wide">Sections</span>
-              </div>
-              <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-neutral-800/60 border border-neutral-700/50">
-                <ListTodo size={16} className="text-amber-400" />
-                <span className="text-lg font-mono font-bold">{stats.total}</span>
-                <span className="text-[10px] text-neutral-500 uppercase tracking-wide">Items</span>
-              </div>
-              <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-neutral-800/60 border border-neutral-700/50">
-                <CheckCircle2 size={16} className="text-emerald-500" />
-                <span className="text-lg font-mono font-bold">{stats.done}</span>
-                <span className="text-[10px] text-neutral-500 uppercase tracking-wide">Done</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 px-1">
-              <div className="flex-1 h-2 rounded-full bg-neutral-700 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all duration-300"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-              <span className="text-sm font-mono text-neutral-400">{progressPct}%</span>
-            </div>
-
-            {stats.perSection && stats.perSection.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-neutral-800">
-                <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium">Per section</p>
-                {stats.perSection.map((sec) => {
-                  const pct = sec.total > 0 ? Math.round((sec.done / sec.total) * 100) : 0;
-                  return (
-                    <div key={sec.name} className="flex items-center gap-3">
-                      <span className="text-xs text-neutral-300 truncate w-28">{sec.name}</span>
-                      <div className="flex-1 h-1.5 rounded-full bg-neutral-700 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-emerald-500/80 transition-all duration-300"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="text-[11px] font-mono text-neutral-500 w-12 text-right">
-                        {sec.done}/{sec.total}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Tag picker popup */}
       {tagPickerState && (

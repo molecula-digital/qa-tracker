@@ -8,6 +8,13 @@
       "when": 1773559767723,
       "tag": "0000_mushy_captain_flint",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773585106894,
+      "tag": "0001_early_anita_blake",
+      "breakpoints": true
     }
   ]
 }

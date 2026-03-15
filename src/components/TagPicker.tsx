@@ -50,7 +50,7 @@ export function TagPicker({ item, anchorEl, onToggleTag, onClose }: TagPickerPro
   return createPortal(
     <div
       ref={popupRef}
-      className="fixed z-[9999] rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-xl min-w-[150px]"
+      className="fixed z-[9999] rounded-xl border border-border bg-popover p-1.5 shadow-xl min-w-[150px]"
       onClick={(e) => e.stopPropagation()}
     >
       {(Object.entries(TAGS) as [TagKey, TagConfig][]).map(([key, cfg]) => {
@@ -61,7 +61,7 @@ export function TagPicker({ item, anchorEl, onToggleTag, onClose }: TagPickerPro
             variant="ghost"
             onClick={() => onToggleTag(key)}
             className={`w-full justify-start gap-2 h-8 text-[13px] ${
-              active ? 'bg-neutral-800 text-neutral-100' : 'text-neutral-400'
+              active ? 'bg-accent text-foreground' : 'text-muted-foreground'
             }`}
           >
             <span
@@ -70,7 +70,7 @@ export function TagPicker({ item, anchorEl, onToggleTag, onClose }: TagPickerPro
             />
             {cfg.label}
             {active && (
-              <span className="ml-auto text-[11px] text-neutral-500">✓</span>
+              <span className="ml-auto text-[11px] text-muted-foreground">&#10003;</span>
             )}
           </Button>
         )
