@@ -21,6 +21,7 @@ export const user = pgTable("user", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   stripeCustomerId: text("stripe_customer_id"),
+  onboardingFinished: boolean("onboarding_finished").default(false).notNull(),
 });
 
 export const session = pgTable(
