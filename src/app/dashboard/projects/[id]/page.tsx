@@ -21,6 +21,7 @@ import {
 import { useCreateNote, useDeleteNote } from "@/hooks/use-notes";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TagPicker } from "@/components/TagPicker";
+import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -370,6 +371,16 @@ export default function ProjectPage({
           {loadingBoard ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-neutral-500 text-sm">Loading board...</p>
+            </div>
+          ) : sections.length === 0 ? (
+            <div className="h-full flex items-center justify-center">
+              <EmptyState
+                icon={LayoutGrid}
+                title="No sections yet"
+                subtitle="Add your first section to start organizing test cases."
+                ctaLabel="Add section"
+                onCta={handleAddSection}
+              />
             </div>
           ) : (
             <div className="h-full px-4">
