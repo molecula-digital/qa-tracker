@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/index.css";
+import { Providers } from "@/lib/providers";
 
 export const metadata: Metadata = {
   title: "Retrack — QA Test Matrix for Teams",
@@ -19,7 +20,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
