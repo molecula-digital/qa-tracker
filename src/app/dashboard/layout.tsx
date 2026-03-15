@@ -101,7 +101,7 @@ export default function DashboardLayout({
     if (isPending) return;
     if (
       session &&
-      !session.session.activeOrganizationId &&
+      !session.user.onboardingFinished &&
       pathname !== "/dashboard/onboarding"
     ) {
       router.push("/dashboard/onboarding");
