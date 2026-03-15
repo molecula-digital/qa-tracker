@@ -525,6 +525,26 @@ export default function ProjectPage({
     [findItem, updateItem, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
+  const handleUpdateItemText = useCallback(
+    (sectionId: string, itemId: string, text: string) => {
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.map((s) =>
+          s.id === sectionId
+            ? { ...s, items: s.items.map((i: Item) => (i.id === itemId ? { ...i, text } : i)) }
+            : s
+        ),
+      }));
+      updateItem.mutate(
+        { id: itemId, currentSectionId: sectionId, text },
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
+      );
+    },
+    [updateItem, invalidateBoard, optimisticBoard, rollbackBoard]
+  );
+
   const handleAddItem = useCallback(
     (sectionId: string, text: string) => {
       const prev = optimisticBoard((old) => ({
@@ -787,7 +807,7 @@ export default function ProjectPage({
   const sections = board?.sections ?? [];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)]">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Compact header */}
       <div className="flex items-center gap-2 mb-3 shrink-0 min-h-[36px]">
         {/* Breadcrumb */}
@@ -897,6 +917,7 @@ export default function ProjectPage({
                 newestSectionId={newestSectionId}
                 onToggleItem={handleToggleItem}
                 onAddItem={handleAddItem}
+                onUpdateItemText={handleUpdateItemText}
                 onDeleteItem={handleDeleteItem}
                 onAddNote={handleAddNote}
                 onDeleteNote={handleDeleteNote}

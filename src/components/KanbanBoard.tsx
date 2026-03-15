@@ -56,6 +56,7 @@ interface KanbanBoardProps {
   readOnly?: boolean
   onToggleItem: (sectionId: string, itemId: string) => void
   onAddItem: (sectionId: string, text: string) => void
+  onUpdateItemText: (sectionId: string, itemId: string, text: string) => void
   onDeleteItem: (sectionId: string, itemId: string) => void
   onAddNote: (sectionId: string, itemId: string, text: string) => void
   onDeleteNote: (sectionId: string, itemId: string, noteId: string) => void
@@ -70,7 +71,7 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({
   sections, search, newestSectionId, readOnly,
-  onToggleItem, onAddItem, onDeleteItem, onAddNote, onDeleteNote,
+  onToggleItem, onAddItem, onUpdateItemText, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateSectionTitle, onColorChange, onIconChange,
   onReorder, onOpenTagPicker, onAddSection,
 }: KanbanBoardProps) {
@@ -87,7 +88,7 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="flex gap-3 overflow-x-auto overflow-y-hidden items-start pb-6 pt-1 h-full">
+    <div className="flex gap-3 overflow-x-auto pb-6 pt-1 h-full">
       <AnimatePresence initial={false}>
         {sections.map((section, i) => (
           <motion.div
@@ -97,7 +98,7 @@ export function KanbanBoard({
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.88, x: -24 }}
             transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-            className="shrink-0 flex"
+            className="shrink-0 flex h-full"
           >
             <KanbanColumn
               section={section}
@@ -115,6 +116,7 @@ export function KanbanBoard({
               onDrop={() => handleDrop(i)}
               onToggleItem={(itemId) => onToggleItem(section.id, itemId)}
               onAddItem={(text) => onAddItem(section.id, text)}
+              onUpdateItemText={(itemId, text) => onUpdateItemText(section.id, itemId, text)}
               onDeleteItem={(itemId) => onDeleteItem(section.id, itemId)}
               onAddNote={(itemId, text) => onAddNote(section.id, itemId, text)}
               onDeleteNote={(itemId, noteId) => onDeleteNote(section.id, itemId, noteId)}
@@ -131,14 +133,13 @@ export function KanbanBoard({
 
       {/* Add section placeholder */}
       <div
-        className={`w-[300px] shrink-0 flex items-center justify-center rounded-[14px] border-2 border-dashed transition-colors cursor-pointer group/add self-start ${
+        className={`w-[300px] shrink-0 self-start flex items-center justify-center rounded-[14px] border-2 border-dashed transition-colors cursor-pointer group/add ${
           'border-border/40 hover:border-border hover:bg-muted/30 min-h-[120px]'
         }`}
         onClick={onAddSection}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault()
-          // If dragging to the end, reorder to last position
           if (dragIndex !== null) {
             handleDrop(sections.length)
           }
@@ -171,6 +172,7 @@ interface KanbanColumnProps {
   onDrop: () => void
   onToggleItem: (itemId: string) => void
   onAddItem: (text: string) => void
+  onUpdateItemText: (itemId: string, text: string) => void
   onDeleteItem: (itemId: string) => void
   onAddNote: (itemId: string, text: string) => void
   onDeleteNote: (itemId: string, noteId: string) => void
@@ -185,7 +187,7 @@ interface KanbanColumnProps {
 function KanbanColumn({
   section, search, isNew, isDragging, isDropTarget, isDraggingAny, isDark,
   onDragStart, onDragOver, onDragEnd, onDrop,
-  onToggleItem, onAddItem, onDeleteItem, onAddNote, onDeleteNote,
+  onToggleItem, onAddItem, onUpdateItemText, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateTitle, onColorChange, onIconChange,
   onOpenTagPicker, readOnly,
 }: KanbanColumnProps) {
@@ -254,7 +256,7 @@ function KanbanColumn({
       onDragOver={(e) => { e.preventDefault(); onDragOver() }}
       onDragEnd={onDragEnd}
       onDrop={(e) => { e.preventDefault(); onDrop() }}
-      className={`w-[300px] shrink-0 flex flex-col max-h-[calc(100vh-9rem)] bg-kanban-column rounded-[14px] transition-[box-shadow,opacity,border-color] duration-150 ${
+      className={`w-[300px] shrink-0 h-full flex flex-col bg-kanban-column rounded-[14px] transition-[box-shadow,opacity,border-color] duration-150 ${
         isDragging ? 'opacity-60 shadow-xl' : 'shadow-sm'
       } ${
         isDropTarget
@@ -273,7 +275,7 @@ function KanbanColumn({
           : { backgroundColor: headerColor }
         }
         transition={{ duration: 1.2, ease: 'easeOut' }}
-        className="flex items-center gap-1.5 px-3 py-2.5 rounded-t-[12px] border-b border-border/30 cursor-grab select-none"
+        className="flex items-center gap-1.5 px-3 py-2.5 rounded-t-[12px] border-b border-border/30 cursor-grab select-none shrink-0"
       >
         {SectionIcon && (
           <span className="flex items-center text-emerald-600 dark:text-emerald-400/70 shrink-0">
@@ -304,7 +306,7 @@ function KanbanColumn({
           {done}/{total}
         </span>
 
-        {/* ··· Menu — proper DropdownMenu anchored here */}
+        {/* ··· Menu */}
         {!readOnly && (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -412,12 +414,11 @@ function KanbanColumn({
       </motion.div>
 
       {/* Cards list */}
-      <div className="relative flex-1 min-h-0">
-        <div
-          ref={cardsRef}
-          onScroll={checkOverflow}
-          className="overflow-y-auto p-2 flex flex-col gap-0 h-full"
-        >
+      <div
+        ref={cardsRef}
+        onScroll={checkOverflow}
+        className="flex-1 min-h-0 overflow-y-auto p-2 relative"
+      >
           <AnimatePresence initial={false}>
             {filtered.map((item) => (
               <motion.div
@@ -432,6 +433,7 @@ function KanbanColumn({
                 <KanbanCard
                   item={item}
                   onToggle={() => onToggleItem(item.id)}
+                  onUpdateText={(text) => onUpdateItemText(item.id, text)}
                   onDelete={() => onDeleteItem(item.id)}
                   onAddNote={(text) => onAddNote(item.id, text)}
                   onDeleteNote={(noteId) => onDeleteNote(item.id, noteId)}
@@ -457,7 +459,6 @@ function KanbanColumn({
               )}
             </div>
           )}
-        </div>
 
         {/* Scroll-to-bottom indicator */}
         <AnimatePresence>
@@ -468,7 +469,7 @@ function KanbanColumn({
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.15 }}
               onClick={() => cardsRef.current?.scrollTo({ top: cardsRef.current.scrollHeight, behavior: 'smooth' })}
-              className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-foreground/90 text-background text-[10px] font-medium shadow-lg backdrop-blur-sm hover:bg-foreground transition-colors cursor-pointer z-10"
+              className="sticky bottom-1 mx-auto flex items-center gap-1 px-2.5 py-1 rounded-full bg-foreground/50 text-background text-[10px] font-medium shadow-md backdrop-blur-md hover:bg-foreground/80 transition-colors cursor-pointer z-10"
             >
               <ChevronsDown size={12} />
               More items
@@ -479,7 +480,7 @@ function KanbanColumn({
 
       {/* Add item */}
       {!readOnly && (
-        <div className="border-t border-border/20 px-3 py-2 rounded-b-[12px]">
+        <div className="border-t border-border/20 px-3 py-2 rounded-b-[12px] shrink-0">
           <div className="flex items-center gap-1.5">
             <Plus size={12} className="text-muted-foreground/40 shrink-0" />
             <input
@@ -508,6 +509,7 @@ function KanbanColumn({
 interface KanbanCardProps {
   item: Item
   onToggle: () => void
+  onUpdateText: (text: string) => void
   onDelete: () => void
   onAddNote: (text: string) => void
   onDeleteNote: (noteId: string) => void
@@ -515,11 +517,21 @@ interface KanbanCardProps {
   readOnly?: boolean
 }
 
-function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenTagPicker, readOnly }: KanbanCardProps) {
+function KanbanCard({ item, onToggle, onUpdateText, onDelete, onAddNote, onDeleteNote, onOpenTagPicker, readOnly }: KanbanCardProps) {
   const tagBtnRef = useRef<HTMLButtonElement>(null)
   const [showNotes, setShowNotes] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editText, setEditText] = useState(item.text)
+  const editRef = useRef<HTMLTextAreaElement>(null)
+
+  const commitEdit = () => {
+    const v = editText.trim()
+    if (v && v !== item.text) onUpdateText(v)
+    if (!v) setEditText(item.text)
+    setEditing(false)
+  }
 
   const commitNote = () => {
     const v = noteText.trim()
@@ -555,11 +567,33 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
           disabled={readOnly}
           className={`mt-[3px] shrink-0${readOnly ? ' pointer-events-none' : ''}`}
         />
-        <span className={`flex-1 text-[13px] leading-relaxed break-words transition-colors ${
-          item.checked ? 'text-muted-foreground/60 line-through' : 'text-foreground'
-        }`}>
-          {item.text}
-        </span>
+        {editing && !readOnly ? (
+          <textarea
+            ref={editRef}
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit() }
+              if (e.key === 'Escape') { setEditText(item.text); setEditing(false) }
+            }}
+            autoFocus
+            rows={1}
+            className="flex-1 text-[13px] leading-relaxed border border-border rounded-md bg-kanban-input-bg px-1.5 py-0.5 outline-none text-foreground font-[inherit] resize-none focus:ring-1 focus:ring-ring/30 transition-colors"
+            style={{ fieldSizing: 'content' } as React.CSSProperties}
+          />
+        ) : (
+          <span
+            onDoubleClick={() => { if (!readOnly) { setEditText(item.text); setEditing(true) } }}
+            className={`flex-1 text-[13px] leading-relaxed wrap-break-word transition-colors ${
+              readOnly ? '' : 'cursor-text'
+            } ${
+              item.checked ? 'text-muted-foreground/60 line-through' : 'text-foreground'
+            }`}
+          >
+            {item.text}
+          </span>
+        )}
         {!readOnly && (confirmDelete ? (
           <Button
             variant="destructive"
@@ -653,7 +687,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0 pb-0.5">
-                          <p className="text-[11px] text-foreground/80 leading-relaxed m-0 break-words">{note.text}</p>
+                          <p className="text-[11px] text-foreground/80 leading-relaxed m-0 wrap-break-word">{note.text}</p>
                           <span className="text-[9px] text-muted-foreground/60 mt-0.5 block tracking-wide font-mono">{formatTs(note.ts)}</span>
                         </div>
                         <Button

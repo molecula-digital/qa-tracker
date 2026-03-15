@@ -126,6 +126,7 @@ export default function PublicProjectPage({
             readOnly
             onToggleItem={() => {}}
             onAddItem={() => {}}
+            onUpdateItemText={() => {}}
             onDeleteItem={() => {}}
             onAddNote={() => {}}
             onDeleteNote={() => {}}

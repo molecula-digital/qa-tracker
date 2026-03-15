@@ -34,6 +34,33 @@ export const auth = betterAuth({
       },
     },
   },
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          if (session.activeOrganizationId) return { data: session };
+
+          // Restore active org from existing memberships on sign-in
+          const [membership] = await db
+            .select({ organizationId: schema.member.organizationId })
+            .from(schema.member)
+            .where(eq(schema.member.userId, session.userId))
+            .limit(1);
+
+          if (membership) {
+            return {
+              data: {
+                ...session,
+                activeOrganizationId: membership.organizationId,
+              },
+            };
+          }
+
+          return { data: session };
+        },
+      },
+    },
+  },
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== "/sign-up/email") return;
