@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag, MessageSquare, ClipboardList, CheckCircle2, ChevronLeft, ChevronRight, Trash2, Plus } from 'lucide-react'
+import { Tag, MessageSquare, ClipboardList, CheckCircle2, Trash2, Plus } from 'lucide-react'
 import type { Section, Item, TagKey, Note } from '../types/tracker'
 import { SECTION_ICONS, type SectionIconKey } from './SectionIcons'
 import { SectionColorPicker } from './SectionColorPicker'
@@ -107,8 +107,6 @@ export function KanbanBoard({
               onUpdateTitle={(title) => onUpdateSectionTitle(section.id, title)}
               onColorChange={(color) => onColorChange(section.id, color)}
               onIconChange={(icon) => onIconChange(section.id, icon)}
-              onMoveLeft={i > 0 ? () => onReorder(i, i - 1) : undefined}
-              onMoveRight={i < sections.length - 1 ? () => onReorder(i, i + 1) : undefined}
               onOpenTagPicker={(anchorEl, item) => onOpenTagPicker(anchorEl, item, section.id)}
             />
           </motion.div>
@@ -143,8 +141,6 @@ interface KanbanColumnProps {
   onUpdateTitle: (title: string) => void
   onColorChange: (color: string) => void
   onIconChange: (icon: string) => void
-  onMoveLeft?: () => void
-  onMoveRight?: () => void
   onOpenTagPicker: (anchorEl: HTMLButtonElement, item: Item) => void
 }
 
@@ -153,12 +149,11 @@ function KanbanColumn({
   onDragStart, onDragOver, onDragEnd, onDrop,
   onToggleItem, onAddItem, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateTitle, onColorChange, onIconChange,
-  onMoveLeft, onMoveRight, onOpenTagPicker,
+  onOpenTagPicker,
 }: KanbanColumnProps) {
   const [addInputVal, setAddInputVal] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const [activePicker, setActivePicker] = useState<'color' | 'icon' | null>(null)
-  const [confirmDeleteSection, setConfirmDeleteSection] = useState(false)
   const menuBtnRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLInputElement>(null)
@@ -196,15 +191,6 @@ function KanbanColumn({
   const commitAdd = () => {
     const v = addInputVal.trim()
     if (v) { onAddItem(v); setAddInputVal('') }
-  }
-
-  const handleDeleteSection = () => {
-    if (total > 0 && !confirmDeleteSection) {
-      setConfirmDeleteSection(true)
-      return
-    }
-    onDeleteSection()
-    setConfirmDeleteSection(false)
   }
 
   const headerColor = getHeaderColor(section.color, isDark)
@@ -274,52 +260,6 @@ function KanbanColumn({
         </Button>
       </motion.div>
 
-      {/* Reorder + section actions bar */}
-      <div className="flex items-center justify-between px-2 py-1 border-b border-border/20">
-        <div className="flex gap-0.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onMoveLeft}
-            disabled={!onMoveLeft}
-            title="Move left"
-            className="w-6 h-6 p-0 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/30 disabled:opacity-100"
-          >
-            <ChevronLeft size={14} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onMoveRight}
-            disabled={!onMoveRight}
-            title="Move right"
-            className="w-6 h-6 p-0 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/30 disabled:opacity-100"
-          >
-            <ChevronRight size={14} />
-          </Button>
-        </div>
-        {confirmDeleteSection ? (
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] text-red-400">Delete {total} items?</span>
-            <Button variant="destructive" size="sm" onClick={handleDeleteSection} className="h-5 px-2 text-[10px]">
-              Yes
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setConfirmDeleteSection(false)} className="h-5 px-2 text-[10px]">
-              No
-            </Button>
-          </div>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDeleteSection}
-            title="Delete section"
-            className="w-6 h-6 p-0 text-muted-foreground hover:text-red-400"
-          >
-            <Trash2 size={12} />
-          </Button>
-        )}
-      </div>
 
       {/* Cards list */}
       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-0">
@@ -388,7 +328,7 @@ function KanbanColumn({
         <SectionMenu ref={menuRef} anchorEl={menuBtnRef.current!} sectionColor={section.color} SectionIcon={SectionIcon}
           onColor={() => { setMenuOpen(false); setActivePicker('color') }}
           onIcon={() => { setMenuOpen(false); setActivePicker('icon') }}
-          onDelete={() => { setMenuOpen(false); handleDeleteSection() }}
+          onDelete={() => { setMenuOpen(false); onDeleteSection() }}
           onClose={() => setMenuOpen(false)}
         />
       )}
