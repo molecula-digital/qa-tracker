@@ -12,6 +12,7 @@ import activityRoute from "./routes/activity";
 import projectLinksRoute from "./routes/project-links";
 import onboarding from "./routes/onboarding";
 import publicBoard from "./routes/public-board";
+import chat from "./routes/chat";
 
 const app = new Hono().basePath("/api");
 
@@ -33,6 +34,7 @@ app.route("/activity", activityRoute);
 app.route("/project-links", projectLinksRoute);
 app.route("/onboarding", onboarding);
 app.route("/public", publicBoard);
+app.route("/chat", chat);
 
 export default app;
 export type AppType = typeof app;

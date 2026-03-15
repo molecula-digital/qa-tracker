@@ -1,6 +1,7 @@
 import { db } from "@/server/db";
 import { section, item, itemTag, note, project } from "@/server/db/schema";
 import { eq, and, inArray, asc, sql } from "drizzle-orm";
+import type { TagKey } from "@/types/tracker";
 
 export async function getBoard(orgId: string, projectId: string) {
   const [proj] = await db
@@ -41,10 +42,10 @@ export async function getBoard(orgId: string, projectId: string) {
           .orderBy(asc(note.createdAt))
       : [];
 
-  const tagsByItem = new Map<string, string[]>();
+  const tagsByItem = new Map<string, TagKey[]>();
   for (const t of tags) {
     const arr = tagsByItem.get(t.itemId) ?? [];
-    arr.push(t.tag);
+    arr.push(t.tag as TagKey);
     tagsByItem.set(t.itemId, arr);
   }
 
@@ -122,10 +123,10 @@ export async function getBoardForAI(orgId: string, projectId: string) {
           .groupBy(note.itemId)
       : [];
 
-  const tagsByItem = new Map<string, string[]>();
+  const tagsByItem = new Map<string, TagKey[]>();
   for (const t of tags) {
     const arr = tagsByItem.get(t.itemId) ?? [];
-    arr.push(t.tag);
+    arr.push(t.tag as TagKey);
     tagsByItem.set(t.itemId, arr);
   }
 
