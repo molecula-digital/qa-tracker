@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 export function CTA() {
   return (
-    <section className="bg-neutral-900 py-32 px-6">
+    <section className="bg-neutral-900 py-24 md:py-32 px-6">
       <motion.div
         className="mx-auto max-w-3xl text-center"
         initial={{ opacity: 0, y: 24 }}
@@ -20,12 +22,9 @@ export function CTA() {
           view of what&rsquo;s tested and what&rsquo;s ready.
         </p>
         <div className="mt-10">
-          <a
-            href="/sign-up"
-            className="inline-block bg-white text-neutral-900 px-8 py-3 rounded-full text-sm font-medium hover:bg-neutral-100 transition-colors"
-          >
+          <Button variant="secondary" size="lg" render={<Link href="/sign-up" />}>
             Get started free
-          </a>
+          </Button>
         </div>
       </motion.div>
     </section>

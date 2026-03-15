@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 const navItems = [
   { label: "Projects", href: "/dashboard" },
@@ -41,14 +43,14 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-white">
-      <aside className="w-60 shrink-0 border-r border-neutral-200 p-6">
+      <aside className="w-60 shrink-0 border-r border-neutral-200 p-6 flex flex-col">
         <Link href="/dashboard" className="block mb-8">
           <span className="text-lg font-semibold text-neutral-900">
             Retrack
           </span>
         </Link>
 
-        <nav>
+        <nav className="flex-1">
           <ul className="space-y-1">
             {navItems.map((item) => {
               const isActive =
@@ -58,21 +60,28 @@ export default function DashboardLayout({
 
               return (
                 <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  <Button
+                    variant="ghost"
+                    className={`w-full justify-start ${
                       isActive
                         ? "bg-neutral-100 text-neutral-900"
-                        : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
+                        : "text-neutral-600"
                     }`}
+                    render={<Link href={item.href} />}
                   >
                     {item.label}
-                  </Link>
+                  </Button>
                 </li>
               );
             })}
           </ul>
         </nav>
+
+        <Separator className="my-4" />
+
+        <p className="text-xs text-neutral-400 px-3">
+          {session?.user?.email}
+        </p>
       </aside>
 
       <main className="flex-1 p-8">{children}</main>

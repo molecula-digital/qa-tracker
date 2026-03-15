@@ -3,6 +3,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut, organization } from "@/lib/auth-client";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 interface Member {
   id: string;
@@ -72,50 +85,50 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold text-neutral-900 mb-8">Settings</h1>
+    <div className="max-w-2xl space-y-8">
+      <h1 className="text-2xl font-semibold text-neutral-900">Settings</h1>
 
-      {/* User info */}
-      <section className="mb-10">
-        <h2 className="text-sm font-medium text-neutral-900 mb-4">Account</h2>
-        <div className="rounded-md border border-neutral-200 p-4">
-          <div className="mb-3">
-            <span className="text-sm text-neutral-500">Name</span>
+      {/* Account section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Account</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-sm text-neutral-500">Name</p>
             <p className="text-sm text-neutral-900">
               {session?.user?.name ?? "--"}
             </p>
           </div>
-          <div className="mb-4">
-            <span className="text-sm text-neutral-500">Email</span>
+          <div>
+            <p className="text-sm text-neutral-500">Email</p>
             <p className="text-sm text-neutral-900">
               {session?.user?.email ?? "--"}
             </p>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
-          >
+          <Separator />
+          <Button variant="outline" size="sm" onClick={handleSignOut}>
             Sign out
-          </button>
-        </div>
-      </section>
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Team members */}
-      <section className="mb-10">
-        <h2 className="text-sm font-medium text-neutral-900 mb-4">
-          Team members
-        </h2>
-        <div className="rounded-md border border-neutral-200">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Team members</CardTitle>
+        </CardHeader>
+        <CardContent>
           {membersLoading ? (
-            <p className="p-4 text-sm text-neutral-500">Loading members...</p>
+            <p className="text-sm text-neutral-500">Loading members...</p>
           ) : members.length === 0 ? (
-            <p className="p-4 text-sm text-neutral-500">No members found.</p>
+            <p className="text-sm text-neutral-500">No members found.</p>
           ) : (
             <ul className="divide-y divide-neutral-200">
               {members.map((member) => (
                 <li
                   key={member.id}
-                  className="flex items-center justify-between px-4 py-3"
+                  className="flex items-center justify-between py-3"
                 >
                   <div>
                     <p className="text-sm font-medium text-neutral-900">
@@ -125,82 +138,71 @@ export default function SettingsPage() {
                       {member.user.email}
                     </p>
                   </div>
-                  <span className="text-xs font-medium text-neutral-500 capitalize">
+                  <Badge variant="outline" className="capitalize">
                     {member.role}
-                  </span>
+                  </Badge>
                 </li>
               ))}
             </ul>
           )}
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
       {/* Invite form */}
-      <section>
-        <h2 className="text-sm font-medium text-neutral-900 mb-4">
-          Invite a team member
-        </h2>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Invite a team member</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {inviteError && (
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {inviteError}
+            </div>
+          )}
 
-        {inviteError && (
-          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {inviteError}
-          </div>
-        )}
+          {inviteSuccess && (
+            <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              Invitation sent successfully.
+            </div>
+          )}
 
-        {inviteSuccess && (
-          <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            Invitation sent successfully.
-          </div>
-        )}
+          <form onSubmit={handleInvite} className="flex items-end gap-3">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="invite-email">Email</Label>
+              <Input
+                id="invite-email"
+                type="email"
+                required
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="teammate@example.com"
+              />
+            </div>
 
-        <form onSubmit={handleInvite} className="flex items-end gap-3">
-          <div className="flex-1">
-            <label
-              htmlFor="invite-email"
-              className="block text-sm font-medium text-neutral-700 mb-1"
-            >
-              Email
-            </label>
-            <input
-              id="invite-email"
-              type="email"
-              required
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-              placeholder="teammate@example.com"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="invite-role">Role</Label>
+              <Select
+                value={inviteRole}
+                onValueChange={(value) =>
+                  setInviteRole(value as "member" | "admin")
+                }
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div>
-            <label
-              htmlFor="invite-role"
-              className="block text-sm font-medium text-neutral-700 mb-1"
-            >
-              Role
-            </label>
-            <select
-              id="invite-role"
-              value={inviteRole}
-              onChange={(e) =>
-                setInviteRole(e.target.value as "member" | "admin")
-              }
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-900 focus:border-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-            >
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            disabled={inviteLoading}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {inviteLoading ? "Sending..." : "Invite"}
-          </button>
-        </form>
-      </section>
+            <Button type="submit" disabled={inviteLoading}>
+              {inviteLoading ? "Sending..." : "Invite"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

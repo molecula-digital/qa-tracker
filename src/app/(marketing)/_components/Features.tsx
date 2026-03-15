@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Kanban, Zap, Users, Shield } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 const features = [
   {
@@ -41,7 +42,7 @@ const cardVariants = {
 
 export function Features() {
   return (
-    <section id="features" className="bg-neutral-50 py-32 px-6">
+    <section id="features" className="bg-neutral-50 py-24 md:py-32 px-6">
       <div className="mx-auto max-w-5xl">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-neutral-900">
@@ -57,16 +58,19 @@ export function Features() {
           {features.map((feature, i) => (
             <motion.div
               key={feature.title}
-              className="bg-white border border-neutral-200 rounded-2xl p-8"
               variants={cardVariants}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-60px" }}
               custom={i}
             >
-              <feature.icon className="w-6 h-6 text-neutral-900 mb-4" strokeWidth={1.5} />
-              <h3 className="text-lg font-bold text-neutral-900">{feature.title}</h3>
-              <p className="mt-2 text-neutral-500 leading-relaxed">{feature.description}</p>
+              <Card className="h-full">
+                <CardContent className="p-8">
+                  <feature.icon className="w-6 h-6 text-neutral-900 mb-4" strokeWidth={1.5} />
+                  <h3 className="text-lg font-bold text-neutral-900">{feature.title}</h3>
+                  <p className="mt-2 text-neutral-500 leading-relaxed">{feature.description}</p>
+                </CardContent>
+              </Card>
             </motion.div>
           ))}
         </div>

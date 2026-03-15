@@ -1,7 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 const plans = [
   {
@@ -62,7 +67,7 @@ const cardVariants = {
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-32 px-6">
+    <section id="pricing" className="py-24 md:py-32 px-6">
       <div className="mx-auto max-w-5xl">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-neutral-900">
@@ -77,43 +82,56 @@ export function Pricing() {
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
-              className={`border rounded-2xl p-8 flex flex-col ${
-                plan.highlighted
-                  ? "border-neutral-900 ring-1 ring-neutral-900"
-                  : "border-neutral-200"
-              }`}
               variants={cardVariants}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-60px" }}
               custom={i}
             >
-              <h3 className="text-lg font-bold text-neutral-900">{plan.name}</h3>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-neutral-900">{plan.price}</span>
-                <span className="text-neutral-500 text-sm">/{plan.period}</span>
-              </div>
-              <p className="mt-2 text-neutral-500 text-sm">{plan.description}</p>
-
-              <ul className="mt-8 space-y-3 flex-1">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-sm text-neutral-700">
-                    <Check className="w-4 h-4 text-neutral-900 mt-0.5 shrink-0" strokeWidth={2} />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <a
-                href="/sign-up"
-                className={`mt-8 block text-center text-sm font-medium px-6 py-3 rounded-full transition-colors ${
+              <Card
+                className={`flex flex-col h-full ${
                   plan.highlighted
-                    ? "bg-neutral-900 text-white hover:bg-neutral-800"
-                    : "border border-neutral-300 text-neutral-900 hover:border-neutral-400"
+                    ? "border-neutral-900 ring-1 ring-neutral-900"
+                    : ""
                 }`}
               >
-                {plan.cta}
-              </a>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{plan.name}</CardTitle>
+                    {plan.highlighted && (
+                      <Badge variant="secondary">Popular</Badge>
+                    )}
+                  </div>
+                  <div className="mt-4 flex items-baseline gap-1">
+                    <span className="text-4xl font-bold text-neutral-900">{plan.price}</span>
+                    <span className="text-neutral-500 text-sm">/{plan.period}</span>
+                  </div>
+                  <p className="mt-2 text-neutral-500 text-sm">{plan.description}</p>
+                </CardHeader>
+
+                <Separator />
+
+                <CardContent className="flex-1 pt-6">
+                  <ul className="space-y-3">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-3 text-sm text-neutral-700">
+                        <Check className="w-4 h-4 text-neutral-900 mt-0.5 shrink-0" strokeWidth={2} />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+
+                <CardFooter>
+                  <Button
+                    variant={plan.highlighted ? "default" : "outline"}
+                    className="w-full"
+                    render={<Link href="/sign-up" />}
+                  >
+                    {plan.cta}
+                  </Button>
+                </CardFooter>
+              </Card>
             </motion.div>
           ))}
         </div>

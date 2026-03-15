@@ -5,42 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-bg: #ffffff;
-  --color-surface: #fafafa;
-  --color-border: #e5e5e5;
-  --color-text: #0a0a0a;
-  --color-muted: #737373;
-  --color-accent: #7a8c5c;
-  --color-accent-light: #e8eee0;
-  --color-danger: #dc2626;
   --font-sans: "Bricolage Grotesque", system-ui, sans-serif;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: #ffffff;
-  color: #0a0a0a;
-  font-family: "Bricolage Grotesque", system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* SuccessModal keyframe animations (cannot be expressed as Tailwind utilities) */
-@keyframes pop-circle {
-  from { transform: scale(0.6); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
-}
-@keyframes draw-check {
-  from { stroke-dashoffset: 50; }
-  to   { stroke-dashoffset: 0;  }
-}
-.animate-pop-circle {
-  animation: pop-circle 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-.animate-draw-check {
-  stroke-dasharray: 50;
-  stroke-dashoffset: 50;
-  animation: draw-check 0.35s 0.25s ease forwards;
 }
 
 :root {
@@ -160,8 +125,28 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   html {
     @apply font-sans;
   }
+}
+
+/* SuccessModal keyframe animations */
+@keyframes pop-circle {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+@keyframes draw-check {
+  from { stroke-dashoffset: 50; }
+  to   { stroke-dashoffset: 0;  }
+}
+.animate-pop-circle {
+  animation: pop-circle 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.animate-draw-check {
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+  animation: draw-check 0.35s 0.25s ease forwards;
 }

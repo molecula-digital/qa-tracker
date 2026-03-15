@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -13,8 +15,8 @@ const fadeUp = {
 
 export function Hero() {
   return (
-    <section className="pt-40 pb-32 px-6">
-      <div className="mx-auto max-w-4xl text-center">
+    <section className="py-32 md:py-40 px-6">
+      <div className="mx-auto max-w-6xl text-center">
         <motion.h1
           className="text-5xl md:text-7xl font-bold tracking-tight text-neutral-900 leading-[1.08]"
           variants={fadeUp}
@@ -46,18 +48,12 @@ export function Hero() {
           animate="visible"
           custom={2}
         >
-          <a
-            href="/sign-up"
-            className="bg-neutral-900 text-white px-8 py-3 rounded-full text-sm font-medium hover:bg-neutral-800 transition-colors"
-          >
+          <Button size="lg" render={<Link href="/sign-up" />}>
             Get started free
-          </a>
-          <a
-            href="/sign-in"
-            className="border border-neutral-300 text-neutral-900 px-8 py-3 rounded-full text-sm font-medium hover:border-neutral-400 transition-colors"
-          >
+          </Button>
+          <Button variant="outline" size="lg" render={<Link href="/sign-in" />}>
             Sign in
-          </a>
+          </Button>
         </motion.div>
 
         <motion.div

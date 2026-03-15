@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { organization } from "@/lib/auth-client";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 function toSlug(name: string): string {
   return name
@@ -53,70 +57,57 @@ export default function OnboardingPage() {
 
   return (
     <div className="mx-auto max-w-md pt-16">
-      <h1 className="text-2xl font-semibold text-neutral-900 mb-1">
-        Create your organization
-      </h1>
-      <p className="text-neutral-500 mb-8">
-        Set up your team to start tracking releases.
-      </p>
+      <Card>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl">Create your organization</CardTitle>
+          <CardDescription>
+            Set up your team to start tracking releases.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
-      {error && (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="org-name">Organization name</Label>
+              <Input
+                id="org-name"
+                type="text"
+                required
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder="Acme Inc."
+              />
+            </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            htmlFor="org-name"
-            className="block text-sm font-medium text-neutral-700 mb-1"
-          >
-            Organization name
-          </label>
-          <input
-            id="org-name"
-            type="text"
-            required
-            value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 placeholder-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-            placeholder="Acme Inc."
-          />
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="org-slug">Slug</Label>
+              <Input
+                id="org-slug"
+                type="text"
+                required
+                value={slug}
+                onChange={(e) => {
+                  setSlug(e.target.value);
+                  setSlugEdited(true);
+                }}
+                placeholder="acme-inc"
+              />
+              <p className="text-xs text-neutral-400">
+                Used in URLs. Lowercase letters, numbers, and hyphens only.
+              </p>
+            </div>
 
-        <div>
-          <label
-            htmlFor="org-slug"
-            className="block text-sm font-medium text-neutral-700 mb-1"
-          >
-            Slug
-          </label>
-          <input
-            id="org-slug"
-            type="text"
-            required
-            value={slug}
-            onChange={(e) => {
-              setSlug(e.target.value);
-              setSlugEdited(true);
-            }}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 placeholder-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-            placeholder="acme-inc"
-          />
-          <p className="mt-1 text-xs text-neutral-400">
-            Used in URLs. Lowercase letters, numbers, and hyphens only.
-          </p>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? "Creating..." : "Create organization"}
-        </button>
-      </form>
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? "Creating..." : "Create organization"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,7 +1,10 @@
+import { Separator } from "@/components/ui/separator";
+
 export function Footer() {
   return (
-    <footer className="border-t border-neutral-200 py-8 px-6">
-      <div className="mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4">
+    <footer>
+      <Separator />
+      <div className="mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-8">
         <p className="text-sm text-neutral-500">
           &copy; {new Date().getFullYear()} Retrack. All rights reserved.
         </p>
