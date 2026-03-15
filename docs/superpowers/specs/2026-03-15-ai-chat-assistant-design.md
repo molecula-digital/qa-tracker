@@ -60,7 +60,7 @@ Extract DB logic from Hono route handlers into standalone service functions. Eac
 | File | Functions |
 |------|-----------|
 | `project-service.ts` | `listProjects`, `getProject`, `createProject`, `updateProject`, `deleteProject`, `getProjectStats` |
-| `section-service.ts` | `createSection`, `updateSection`, `deleteSection` |
+| `section-service.ts` | `listSections`, `createSection`, `updateSection`, `deleteSection` |
 | `item-service.ts` | `createItem`, `updateItem`, `deleteItem`, `setItemTags`, `searchItems`, `getItemNotes` |
 | `note-service.ts` | `createNote`, `deleteNote` |
 | `board-service.ts` | `getBoard` |
@@ -193,10 +193,16 @@ Conversations are client-side only via `useChat` state. History is lost on page 
 No plan-gating for v1. The AI assistant is available to all authenticated users with an active organization. Cost controls are handled via rate limiting (below).
 
 ### Rate limiting
-The chat endpoint enforces a simple per-user rate limit: max 20 requests per minute. This is implemented as a lightweight in-memory counter in the Hono middleware, checked before hitting OpenAI. This prevents runaway costs from a single user. More sophisticated limits (per-org, token-based) can be added later.
+The chat endpoint enforces a simple per-user rate limit: max 20 requests per minute. This is implemented as a lightweight in-memory counter in the Hono middleware, checked before hitting OpenAI. **Known limitation:** In-memory rate limiting does not survive across multiple server instances (e.g., serverless). Since this app is self-hosted on single-instance infra, this is acceptable for v1. If scaled to multiple instances, migrate to Redis or Postgres-backed rate limiting.
 
 ### AI SDK version
 This spec targets AI SDK v5.x (`ai@^5.0.0`, `@ai-sdk/react@^5.0.0`, `@ai-sdk/openai@^1.0.0`). The `needsApproval`, `addToolApprovalResponse`, and `sendAutomaticallyWhen` APIs are based on the v5 documentation provided. Exact API names will be verified against installed package types during implementation.
+
+### Zod v4 compatibility
+The project uses `zod@^4.3.6`. AI SDK v5 tool definitions use Zod for `inputSchema`. Compatibility with Zod v4 will be verified during implementation — if AI SDK v5 requires Zod v3, we'll use `zod/v3` compat import or adapt schemas accordingly.
+
+### maxTokens scope
+`maxTokens: 2048` applies to the total output tokens per `streamText` call (across all steps). For multi-step tool chains (up to 10 steps), this may be tight. If truncation becomes an issue during testing, increase to 4096.
 
 ## Data Flow
 
