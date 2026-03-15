@@ -3,7 +3,7 @@ import { project, section } from "@/server/db/schema";
 import { eq, count } from "drizzle-orm";
 
 const PLAN_LIMITS = {
-  free: { projects: 2, sectionsPerProject: 5 },
+  free: { projects: 2, sectionsPerProject: Infinity },
   team: { projects: 10, sectionsPerProject: Infinity },
   business: { projects: Infinity, sectionsPerProject: Infinity },
 } as const;
