@@ -26,6 +26,8 @@ const defaultProps = {
   onAddNote: vi.fn(),
   onDeleteNote: vi.fn(),
   onOpenTagPicker: vi.fn(),
+  onColorChange: vi.fn(),
+  onIconChange: vi.fn(),
 }
 
 describe('SectionCard', () => {
