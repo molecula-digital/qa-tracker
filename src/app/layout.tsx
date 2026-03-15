@@ -1,0 +1,25 @@
+import type { Metadata } from "next";
+import "@/index.css";
+
+export const metadata: Metadata = {
+  title: "Retrack — QA Test Matrix for Teams",
+  description: "Real-time collaborative test tracking for QA teams",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
