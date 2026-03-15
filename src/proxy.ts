@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const standalone = process.env.NEXT_PUBLIC_STANDALONE === "true";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const sessionToken = request.cookies.get("better-auth.session_token");
   const { pathname } = request.nextUrl;
 
