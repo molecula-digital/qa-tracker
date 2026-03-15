@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: retrack-postgres
+    environment:
+      POSTGRES_USER: retrack
+      POSTGRES_PASSWORD: retrack_dev
+      POSTGRES_DB: retrack
+    ports:
+      - "5443:5432"
+    volumes:
+      - retrack_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U retrack -d retrack"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  retrack_pgdata:
