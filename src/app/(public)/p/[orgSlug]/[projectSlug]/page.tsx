@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { EmptyState } from "@/components/EmptyState";
 import { LayoutGrid } from "lucide-react";
+import type { TagKey } from "@/types/tracker";
 
 interface PublicSection {
   title: string;
@@ -51,8 +52,8 @@ function adaptSections(sections: PublicSection[]) {
       id: `s-${si}-i-${ii}`,
       text: item.text,
       checked: item.checked,
-      tags: item.tags,
-      notes: [],
+      tags: item.tags as TagKey[],
+      notes: [] as { id: string; text: string; ts: number }[],
     })),
   }));
 }
