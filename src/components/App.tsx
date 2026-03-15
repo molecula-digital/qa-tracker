@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { useTracker } from './hooks/useTracker'
-import { Toolbar } from './components/Toolbar'
-import { KanbanBoard } from './components/KanbanBoard'
-import { ConfirmModal } from './components/ConfirmModal'
-import { SuccessModal } from './components/SuccessModal'
-import { StatsModal } from './components/StatsModal'
-import { TagPicker } from './components/TagPicker'
-import { ChecklistIcon } from './components/Icons'
-import type { Item, TagKey } from './types/tracker'
+import { useTracker } from '@/hooks/useTracker'
+import { Toolbar } from '@/components/Toolbar'
+import { KanbanBoard } from '@/components/KanbanBoard'
+import { ConfirmModal } from '@/components/ConfirmModal'
+import { SuccessModal } from '@/components/SuccessModal'
+import { StatsModal } from '@/components/StatsModal'
+import { TagPicker } from '@/components/TagPicker'
+import { ChecklistIcon } from '@/components/Icons'
+import type { Item, TagKey } from '@/types/tracker'
 
 type ConfirmState = { title: string; body: string; onConfirm: () => void } | null
 type SuccessState = { title: string; body: string } | null
