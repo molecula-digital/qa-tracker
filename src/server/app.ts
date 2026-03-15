@@ -16,7 +16,7 @@ const app = new Hono().basePath("/api");
 app.use("*", logger());
 
 // Mount Better Auth — handles all /api/auth/* routes
-app.on(["GET", "POST"], "/auth/**", (c) => {
+app.on(["GET", "POST"], "/auth/*", (c) => {
   return auth.handler(c.req.raw);
 });
 

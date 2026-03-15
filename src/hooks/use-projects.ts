@@ -47,6 +47,7 @@ export function useCreateProject() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["project-stats"] });
     },
   });
 }
@@ -69,6 +70,7 @@ export function useUpdateProject() {
       }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["project-stats"] });
       qc.invalidateQueries({ queryKey: ["projects", vars.id] });
     },
   });
@@ -81,6 +83,7 @@ export function useDeleteProject() {
       fetchJSON(`/api/projects/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["project-stats"] });
     },
   });
 }

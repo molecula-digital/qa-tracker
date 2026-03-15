@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { Kanban, Zap, Users, Shield } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 
 const features = [
   {
@@ -42,19 +41,19 @@ const cardVariants = {
 
 export function Features() {
   return (
-    <section id="features" className="bg-neutral-50 py-24 md:py-32 px-6">
+    <section id="features" className="bg-muted/50 py-24 md:py-32 px-6 border-y border-border">
       <div className="mx-auto max-w-5xl">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-neutral-900">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground">
             Everything your QA team needs
           </h2>
-          <p className="mt-4 text-lg text-neutral-500 max-w-2xl mx-auto">
+          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
             A focused toolkit that replaces messy spreadsheets and scattered
             threads with one clear source of truth.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-6">
           {features.map((feature, i) => (
             <motion.div
               key={feature.title}
@@ -63,14 +62,13 @@ export function Features() {
               whileInView="visible"
               viewport={{ once: true, margin: "-60px" }}
               custom={i}
+              className="group rounded-2xl border border-border bg-card p-8 hover:border-foreground/20 transition-colors"
             >
-              <Card className="h-full">
-                <CardContent className="p-8">
-                  <feature.icon className="w-6 h-6 text-neutral-900 mb-4" strokeWidth={1.5} />
-                  <h3 className="text-lg font-bold text-neutral-900">{feature.title}</h3>
-                  <p className="mt-2 text-neutral-500 leading-relaxed">{feature.description}</p>
-                </CardContent>
-              </Card>
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-muted border border-border mb-5 group-hover:border-foreground/20 transition-colors">
+                <feature.icon className="w-5 h-5 text-foreground" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-base font-bold text-foreground">{feature.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
             </motion.div>
           ))}
         </div>
