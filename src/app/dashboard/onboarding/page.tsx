@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { organization } from "@/lib/auth-client";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+
+interface PendingInvitation {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  organizationSlug: string;
+  role: string | null;
+  expiresAt: string;
+  createdAt: string;
+}
 
 function toSlug(name: string): string {
   return name
@@ -16,17 +27,61 @@ function toSlug(name: string): string {
 }
 
 export default function OnboardingPage() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(true);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchInvitations() {
+      try {
+        const res = await fetch("/api/onboarding/invitations");
+        if (res.ok) {
+          const data = await res.json();
+          setInvitations(data);
+        }
+      } catch {
+        // Silently fail — user can still create an org
+      } finally {
+        setLoadingInvitations(false);
+      }
+    }
+    fetchInvitations();
+  }, []);
 
   function handleNameChange(value: string) {
     setName(value);
     if (!slugEdited) {
       setSlug(toSlug(value));
+    }
+  }
+
+  async function handleAcceptInvitation(invitationId: string) {
+    setError(null);
+    setAcceptingId(invitationId);
+
+    try {
+      const res = await fetch("/api/onboarding/accept-invitation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invitationId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to accept invitation. Please try again.");
+        return;
+      }
+
+      window.location.href = "/dashboard";
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setAcceptingId(null);
     }
   }
 
@@ -64,6 +119,57 @@ export default function OnboardingPage() {
 
   return (
     <div className="mx-auto max-w-md pt-16">
+      {error && (
+        <div className="mb-4 rounded-md border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+
+      {!loadingInvitations && invitations.length > 0 && (
+        <Card className="mb-4">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">You have been invited</CardTitle>
+            <CardDescription>
+              Join an existing organization to get started.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {invitations.map((inv) => (
+              <div
+                key={inv.id}
+                className="flex items-center justify-between rounded-md border p-3"
+              >
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">{inv.organizationName}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {inv.organizationSlug}
+                    </span>
+                    {inv.role && (
+                      <Badge variant="secondary" className="text-xs">
+                        {inv.role}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => handleAcceptInvitation(inv.id)}
+                  disabled={acceptingId !== null}
+                >
+                  {acceptingId === inv.id ? "Joining..." : "Join"}
+                </Button>
+              </div>
+            ))}
+
+            <Separator className="my-2" />
+            <p className="text-center text-xs text-muted-foreground">
+              Or create a new organization below
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl">Create your organization</CardTitle>
@@ -72,12 +178,6 @@ export default function OnboardingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
-            <div className="mb-4 rounded-md border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-400">
-              {error}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="org-name">Organization name</Label>

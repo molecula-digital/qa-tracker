@@ -29,6 +29,13 @@
       "when": 1773590482404,
       "tag": "0003_stiff_electro",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773609334301,
+      "tag": "0004_nifty_energizer",
+      "breakpoints": true
     }
   ]
 }

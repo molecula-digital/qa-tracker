@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, boolean, uniqueIndex } from "drizzle-orm/pg-core";
+import { user } from "./auth";
 
 export const project = pgTable(
   "project",
@@ -9,7 +10,7 @@ export const project = pgTable(
     slug: text("slug").notNull(),
     isPublic: boolean("is_public").default(false).notNull(),
     organizationId: text("organization_id").notNull(),
-    createdBy: text("created_by").notNull(),
+    createdBy: text("created_by").notNull().references(() => user.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

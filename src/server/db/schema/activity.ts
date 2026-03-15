@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp, pgEnum } from "drizzle-orm/pg-core";
 import { project } from "./projects";
+import { user } from "./auth";
 
 export const activityActionEnum = pgEnum("activity_action", [
   "created",
@@ -21,7 +22,7 @@ export const activity = pgTable("activity", {
   projectId: text("project_id")
     .notNull()
     .references(() => project.id, { onDelete: "cascade" }),
-  actorId: text("actor_id").notNull(),
+  actorId: text("actor_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   actorName: text("actor_name").notNull(),
   action: activityActionEnum("action").notNull(),
   entity: activityEntityEnum("entity").notNull(),

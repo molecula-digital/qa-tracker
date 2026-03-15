@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export function proxy(request: NextRequest) {
+const standalone = process.env.NEXT_PUBLIC_STANDALONE === "true";
+
+export function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get("better-auth.session_token");
   const { pathname } = request.nextUrl;
 
   const isAuthPage = pathname === "/sign-in" || pathname === "/sign-up";
   const isDashboard = pathname.startsWith("/dashboard");
+
+  // Standalone mode: skip marketing pages, go straight to app
+  if (standalone && pathname === "/") {
+    const target = sessionToken ? "/dashboard" : "/sign-in";
+    return NextResponse.redirect(new URL(target, request.url));
+  }
 
   if (isDashboard && !sessionToken) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
@@ -19,5 +27,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/sign-in", "/sign-up"],
+  matcher: ["/", "/dashboard/:path*", "/sign-in", "/sign-up"],
 };

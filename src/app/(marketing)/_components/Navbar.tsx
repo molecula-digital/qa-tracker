@@ -27,7 +27,7 @@ export function Navbar() {
           <Link href="/sign-in" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Sign in
           </Link>
-          <Button size="sm" render={<Link href="/sign-up" />}>
+          <Button size="sm" nativeButton={false} render={<Link href="/sign-up" />}>
             Get started
           </Button>
         </div>
@@ -54,7 +54,7 @@ export function Navbar() {
           <Link href="/sign-in" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Sign in
           </Link>
-          <Button size="sm" render={<Link href="/sign-up" />}>
+          <Button size="sm" nativeButton={false} render={<Link href="/sign-up" />}>
             Get started
           </Button>
         </div>
