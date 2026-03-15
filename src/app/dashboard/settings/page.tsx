@@ -16,6 +16,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Member {
   id: string;
@@ -79,6 +80,17 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleRoleChange(memberId: string, role: string | null) {
+    if (!role) return;
+    await organization.updateMemberRole({ memberId, role });
+    loadMembers();
+  }
+
+  async function handleRemove(memberIdOrEmail: string) {
+    await organization.removeMember({ memberIdOrEmail });
+    loadMembers();
+  }
+
   async function handleSignOut() {
     await signOut();
     router.push("/sign-in");
@@ -130,17 +142,54 @@ export default function SettingsPage() {
                   key={member.id}
                   className="flex items-center justify-between py-3"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {member.user.name}
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      {member.user.email}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback className="text-xs bg-neutral-800 text-neutral-300">
+                        {member.user.name?.charAt(0)?.toUpperCase() || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {member.user.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {member.user.email}
+                      </p>
+                    </div>
                   </div>
-                  <Badge variant="outline" className="capitalize">
-                    {member.role}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {member.role !== "owner" && (
+                      <>
+                        <Select
+                          value={member.role}
+                          onValueChange={(role) =>
+                            handleRoleChange(member.id, role)
+                          }
+                        >
+                          <SelectTrigger className="w-24 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="member">Member</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-400 hover:text-red-300"
+                          onClick={() => handleRemove(member.id)}
+                        >
+                          Remove
+                        </Button>
+                      </>
+                    )}
+                    {member.role === "owner" && (
+                      <Badge variant="outline" className="capitalize">
+                        Owner
+                      </Badge>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

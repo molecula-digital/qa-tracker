@@ -8,6 +8,18 @@ import { SectionColorPicker } from './SectionColorPicker'
 import { SectionIconPicker } from './SectionIconPicker'
 import { SectionMenu } from './SectionMenu'
 import { PlusIcon } from './Icons'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+
+function darkenColor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  const dr = Math.round(r * 0.35)
+  const dg = Math.round(g * 0.35)
+  const db = Math.round(b * 0.35)
+  return `rgb(${dr}, ${dg}, ${db})`
+}
 
 const TAG_COLORS: Record<TagKey, string> = {
   bug: '#e05555',
@@ -191,8 +203,8 @@ function KanbanColumn({
       {/* Header */}
       <motion.div
         animate={isNew
-          ? { backgroundColor: ['#2d4a1e', '#264016', section.color || '#2a2a2a'] }
-          : { backgroundColor: section.color || '#2a2a2a' }
+          ? { backgroundColor: ['#2d4a1e', '#264016', section.color ? darkenColor(section.color) : '#2a2a2a'] }
+          : { backgroundColor: section.color ? darkenColor(section.color) : '#2a2a2a' }
         }
         transition={{ duration: 1.2, ease: 'easeOut' }}
         style={{
@@ -342,8 +354,11 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
 
       {/* Main row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
-        <input type="checkbox" checked={item.checked} onChange={onToggle}
-          style={{ marginTop: 2, accentColor: '#7a8c5c', flexShrink: 0, cursor: 'pointer' }} />
+        <Checkbox
+          checked={item.checked}
+          onCheckedChange={onToggle}
+          className="mt-0.5 shrink-0"
+        />
         <span style={{ flex: 1, fontSize: 13, color: item.checked ? '#666' : '#e5e5e5', textDecoration: item.checked ? 'line-through' : 'none', lineHeight: 1.4, wordBreak: 'break-word' }}>
           {item.text}
         </span>
@@ -406,8 +421,12 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
                         <div style={{ marginLeft: 5, width: 1, height: 10, background: '#333' }} />
                       )}
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                        {/* Node dot */}
-                        <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#111', border: '2px solid #444', flexShrink: 0, marginTop: 3 }} />
+                        {/* User avatar */}
+                        <Avatar className="w-5 h-5 shrink-0 mt-0.5">
+                          <AvatarFallback className="text-[8px] bg-neutral-700 text-neutral-300">
+                            U
+                          </AvatarFallback>
+                        </Avatar>
                         <div style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
                           <p style={{ fontSize: 11, color: '#ccc', lineHeight: 1.45, margin: 0, wordBreak: 'break-word' }}>{note.text}</p>
                           <span style={{ fontSize: 9, color: '#555', marginTop: 2, display: 'block', letterSpacing: '0.01em' }}>{formatTs(note.ts)}</span>

@@ -12,10 +12,12 @@ import {
   CreditCard,
   PanelLeftClose,
   PanelLeftOpen,
+  Users,
 } from "lucide-react";
 
 const navItems = [
   { label: "Projects", href: "/dashboard", icon: FolderKanban },
+  { label: "Team", href: "/dashboard/settings", icon: Users },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
   { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
 ];
@@ -65,23 +67,32 @@ export default function DashboardLayout({
             collapsed ? "w-14" : "w-60"
           } shrink-0 bg-neutral-950 border-r border-neutral-800 flex flex-col transition-all duration-200 overflow-hidden`}
         >
-          <div className="flex items-center justify-between p-4">
-            <Link href="/dashboard" className="block">
-              <span className="text-lg font-semibold text-neutral-100 font-mono">
-                {collapsed ? "R" : "Retrack"}
-              </span>
-            </Link>
-            <button
-              onClick={() => setCollapsed((v) => !v)}
-              className="text-neutral-500 hover:text-neutral-300 transition-colors"
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {collapsed ? (
-                <PanelLeftOpen size={16} />
-              ) : (
-                <PanelLeftClose size={16} />
+          <div className={`flex flex-col items-center ${collapsed ? 'py-3 gap-2' : 'p-4'}`}>
+            <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between w-full'}`}>
+              <Link href="/dashboard" className="block">
+                <span className="text-lg font-semibold text-neutral-100 font-mono">
+                  {collapsed ? "R" : "Retrack"}
+                </span>
+              </Link>
+              {!collapsed && (
+                <button
+                  onClick={() => setCollapsed((v) => !v)}
+                  className="text-neutral-500 hover:text-neutral-300 transition-colors"
+                  title="Collapse sidebar"
+                >
+                  <PanelLeftClose size={16} />
+                </button>
               )}
-            </button>
+            </div>
+            {collapsed && (
+              <button
+                onClick={() => setCollapsed((v) => !v)}
+                className="text-neutral-500 hover:text-neutral-300 transition-colors"
+                title="Expand sidebar"
+              >
+                <PanelLeftOpen size={14} />
+              </button>
+            )}
           </div>
 
           <nav className="flex-1 px-2">

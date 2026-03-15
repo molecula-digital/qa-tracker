@@ -2,7 +2,7 @@
 
 import { use, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { Search, Plus, X, BarChart3, CheckCircle2 } from "lucide-react";
+import { Search, Plus, X, BarChart3, CheckCircle2, LayoutGrid, ListTodo } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/hooks/use-projects";
 import { useBoard } from "@/hooks/use-board";
@@ -22,6 +22,13 @@ import { useCreateNote, useDeleteNote } from "@/hooks/use-notes";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TagPicker } from "@/components/TagPicker";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Item, TagKey } from "@/types/tracker";
 
 export default function ProjectPage({
@@ -43,6 +50,8 @@ export default function ProjectPage({
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [newestSectionId, setNewestSectionId] = useState<string | null>(null);
+
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const [tagPickerState, setTagPickerState] = useState<{
     item: Item;
@@ -67,16 +76,21 @@ export default function ProjectPage({
 
   // Stats
   const stats = useMemo(() => {
-    if (!board?.sections) return { done: 0, total: 0, sections: 0 };
+    if (!board?.sections) return { done: 0, total: 0, sections: 0, perSection: [] as { name: string; done: number; total: number }[] };
     let done = 0;
     let total = 0;
+    const perSection: { name: string; done: number; total: number }[] = [];
     for (const sec of board.sections) {
+      let secDone = 0;
+      let secTotal = 0;
       for (const item of sec.items) {
         total++;
-        if (item.checked) done++;
+        secTotal++;
+        if (item.checked) { done++; secDone++; }
       }
+      perSection.push({ name: sec.title, done: secDone, total: secTotal });
     }
-    return { done, total, sections: board.sections.length };
+    return { done, total, sections: board.sections.length, perSection };
   }, [board]);
 
   const progressPct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
@@ -327,6 +341,7 @@ export default function ProjectPage({
 
         {/* Stats button */}
         <button
+          onClick={() => setStatsOpen(true)}
           className="flex items-center justify-center w-7 h-7 rounded-md text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800 transition-colors"
           title={`${stats.sections} sections, ${stats.total} items, ${stats.done} done`}
         >
@@ -344,33 +359,107 @@ export default function ProjectPage({
         </Button>
       </div>
 
-      {/* Board — fills all remaining space */}
-      <div className="flex-1 overflow-hidden -mx-4">
-        {loadingBoard ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-neutral-500 text-sm">Loading board...</p>
+      {/* Tabs: Board + Activity */}
+      <Tabs defaultValue="board" className="flex-1 flex flex-col overflow-hidden">
+        <TabsList className="shrink-0 self-start bg-neutral-800 mb-2">
+          <TabsTrigger value="board">Board</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="board" className="flex-1 overflow-hidden mt-0 -mx-4">
+          {loadingBoard ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-neutral-500 text-sm">Loading board...</p>
+            </div>
+          ) : (
+            <div className="h-full px-4">
+              <KanbanBoard
+                sections={sections}
+                search={search}
+                newestSectionId={newestSectionId}
+                onToggleItem={handleToggleItem}
+                onAddItem={handleAddItem}
+                onDeleteItem={handleDeleteItem}
+                onAddNote={handleAddNote}
+                onDeleteNote={handleDeleteNote}
+                onDeleteSection={handleDeleteSection}
+                onUpdateSectionTitle={handleUpdateSectionTitle}
+                onColorChange={handleColorChange}
+                onIconChange={handleIconChange}
+                onReorder={handleReorder}
+                onOpenTagPicker={handleOpenTagPicker}
+              />
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="activity" className="flex-1 overflow-auto mt-0">
+          <div className="text-sm text-neutral-500 py-8 text-center">
+            Activity feed coming soon.
           </div>
-        ) : (
-          <div className="h-full px-4">
-            <KanbanBoard
-              sections={sections}
-              search={search}
-              newestSectionId={newestSectionId}
-              onToggleItem={handleToggleItem}
-              onAddItem={handleAddItem}
-              onDeleteItem={handleDeleteItem}
-              onAddNote={handleAddNote}
-              onDeleteNote={handleDeleteNote}
-              onDeleteSection={handleDeleteSection}
-              onUpdateSectionTitle={handleUpdateSectionTitle}
-              onColorChange={handleColorChange}
-              onIconChange={handleIconChange}
-              onReorder={handleReorder}
-              onOpenTagPicker={handleOpenTagPicker}
-            />
+        </TabsContent>
+      </Tabs>
+
+      {/* Stats dialog */}
+      <Dialog open={statsOpen} onOpenChange={setStatsOpen}>
+        <DialogContent className="bg-neutral-900 border-neutral-800 text-neutral-100 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Project Statistics</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-neutral-800/60 border border-neutral-700/50">
+                <LayoutGrid size={16} className="text-blue-400" />
+                <span className="text-lg font-mono font-bold">{stats.sections}</span>
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wide">Sections</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-neutral-800/60 border border-neutral-700/50">
+                <ListTodo size={16} className="text-amber-400" />
+                <span className="text-lg font-mono font-bold">{stats.total}</span>
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wide">Items</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-neutral-800/60 border border-neutral-700/50">
+                <CheckCircle2 size={16} className="text-emerald-500" />
+                <span className="text-lg font-mono font-bold">{stats.done}</span>
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wide">Done</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 px-1">
+              <div className="flex-1 h-2 rounded-full bg-neutral-700 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-300"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <span className="text-sm font-mono text-neutral-400">{progressPct}%</span>
+            </div>
+
+            {stats.perSection && stats.perSection.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-neutral-800">
+                <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium">Per section</p>
+                {stats.perSection.map((sec) => {
+                  const pct = sec.total > 0 ? Math.round((sec.done / sec.total) * 100) : 0;
+                  return (
+                    <div key={sec.name} className="flex items-center gap-3">
+                      <span className="text-xs text-neutral-300 truncate w-28">{sec.name}</span>
+                      <div className="flex-1 h-1.5 rounded-full bg-neutral-700 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-500/80 transition-all duration-300"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[11px] font-mono text-neutral-500 w-12 text-right">
+                        {sec.done}/{sec.total}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Tag picker popup */}
       {tagPickerState && (
