@@ -5,11 +5,12 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   FolderKanban, Plus, Trash2, CheckCircle2, ListTodo,
-  TrendingUp, LayoutGrid, Activity, Clock,
+  TrendingUp, LayoutGrid, Activity, Clock, Mail, Building2,
 } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import { useProjectStats, type ProjectStats } from "@/hooks/use-project-stats";
 import { useCreateProject, useDeleteProject } from "@/hooks/use-projects";
+import { usePendingInvitations, useAcceptInvitation } from "@/hooks/use-invitations";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,6 +80,56 @@ const gridVariants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.06, delayChildren: 0.15 } },
 };
+
+/* ── PendingInvitationsBanner ── */
+
+function PendingInvitationsBanner() {
+  const { data: invitations, isLoading } = usePendingInvitations();
+  const acceptInvitation = useAcceptInvitation();
+
+  if (isLoading || !invitations || invitations.length === 0) return null;
+
+  return (
+    <motion.div
+      className="mb-6 space-y-3"
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">
+        <Mail size={14} />
+        <span>Pending invitations</span>
+      </div>
+      {invitations.map((inv) => (
+        <div
+          key={inv.id}
+          className="flex items-center justify-between gap-4 p-4 rounded-xl bg-card border border-border/60"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted border border-border/60 shrink-0">
+              <Building2 size={15} className="text-muted-foreground" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {inv.organizationName}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Invited as {inv.role ?? "member"}
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => acceptInvitation.mutate(inv.id)}
+            disabled={acceptInvitation.isPending}
+          >
+            {acceptInvitation.isPending ? "Joining..." : "Join"}
+          </Button>
+        </div>
+      ))}
+    </motion.div>
+  );
+}
 
 /* ── SummaryStrip ── */
 
@@ -370,6 +421,8 @@ export default function DashboardPage() {
           </Dialog>
         </div>
       </motion.div>
+
+      <PendingInvitationsBanner />
 
       {!hasProjects ? (
         <motion.div
