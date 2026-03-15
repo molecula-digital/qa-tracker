@@ -1,10 +1,10 @@
 "use client";
 
-import { use, useState, useCallback, useMemo } from "react";
+import { use, useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Search, Plus, X, CheckCircle2, LayoutGrid, ListTodo,
-  Activity, Clock, User, TrendingUp,
+  Activity, Clock, User, TrendingUp, Copy, ExternalLink, Check,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/hooks/use-projects";
@@ -38,6 +38,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Item, TagKey } from "@/types/tracker";
+import { useUpdateProject } from "@/hooks/use-projects";
+import { organization as orgClient } from "@/lib/auth-client";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 /* ── helpers ── */
 
@@ -252,6 +257,154 @@ function StatsPanel({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── ProjectSettings ── */
+
+function ProjectSettings({ project }: { project: { id: string; name: string; description: string | null; slug: string; isPublic: boolean } }) {
+  const updateProject = useUpdateProject();
+  const [isPublic, setIsPublic] = useState(project.isPublic);
+  const [slug, setSlug] = useState(project.slug);
+  const [name, setName] = useState(project.name);
+  const [description, setDescription] = useState(project.description ?? "");
+  const [copied, setCopied] = useState(false);
+  const [slugError, setSlugError] = useState("");
+  const [orgSlug, setOrgSlug] = useState("");
+
+  useEffect(() => {
+    orgClient.getFullOrganization().then((result) => {
+      if (result.data?.slug) setOrgSlug(result.data.slug);
+    });
+  }, []);
+
+  const publicUrl = orgSlug && typeof window !== "undefined"
+    ? `${window.location.origin}/p/${orgSlug}/${slug}`
+    : "";
+
+  const handleTogglePublic = (checked: boolean) => {
+    setIsPublic(checked);
+    updateProject.mutate({ id: project.id, isPublic: checked });
+  };
+
+  const handleSaveSlug = () => {
+    const pattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
+    if (!pattern.test(slug)) {
+      setSlugError("Lowercase letters, numbers, and hyphens only");
+      return;
+    }
+    setSlugError("");
+    updateProject.mutate(
+      { id: project.id, slug },
+      {
+        onError: (err) => {
+          if (err.message.includes("409") || err.message.includes("Slug")) {
+            setSlugError("This slug is already in use");
+          }
+        },
+      }
+    );
+  };
+
+  const handleSaveDetails = () => {
+    updateProject.mutate({
+      id: project.id,
+      name,
+      description: description || undefined,
+    });
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(publicUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="max-w-lg space-y-8 p-1">
+      {/* Public access */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium text-foreground">Public access</h3>
+        <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-foreground">Make this project public</p>
+            <p className="text-xs text-muted-foreground">
+              Anyone with the link can view the board in read-only mode
+            </p>
+          </div>
+          <Switch checked={isPublic} onCheckedChange={handleTogglePublic} />
+        </div>
+
+        {isPublic && (
+          <div className="space-y-3 pl-1">
+            {/* Public URL */}
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border">
+              <ExternalLink size={14} className="text-muted-foreground shrink-0" />
+              <span className="text-xs text-muted-foreground truncate flex-1 font-mono">
+                {publicUrl || "Save to generate URL"}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopy}
+                className="h-7 px-2 shrink-0"
+              >
+                {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+              </Button>
+            </div>
+
+            {/* Slug editor */}
+            <div className="space-y-1.5">
+              <Label htmlFor="project-slug" className="text-xs">URL slug</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="project-slug"
+                  value={slug}
+                  onChange={(e) => { setSlug(e.target.value.toLowerCase()); setSlugError(""); }}
+                  className="h-8 text-sm font-mono"
+                  placeholder="my-project"
+                />
+                <Button size="sm" className="h-8" onClick={handleSaveSlug}>
+                  Save
+                </Button>
+              </div>
+              {slugError && (
+                <p className="text-xs text-red-400">{slugError}</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Project details */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium text-foreground">Project details</h3>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="project-name" className="text-xs">Name</Label>
+            <Input
+              id="project-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="project-desc" className="text-xs">Description</Label>
+            <Input
+              id="project-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="h-8 text-sm"
+              placeholder="Optional description"
+            />
+          </div>
+          <Button size="sm" onClick={handleSaveDetails}>
+            Save changes
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -584,6 +737,7 @@ export default function ProjectPage({
           <TabsTrigger value="board">Board</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="stats">Stats</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="board" className="flex-1 overflow-hidden mt-0 -mx-4">
@@ -635,6 +789,12 @@ export default function ProjectPage({
             </div>
           ) : (
             <StatsPanel stats={stats} progressPct={progressPct} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="settings" className="flex-1 overflow-auto mt-0">
+          {project && (
+            <ProjectSettings project={project as { id: string; name: string; description: string | null; slug: string; isPublic: boolean }} />
           )}
         </TabsContent>
       </Tabs>
