@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { FolderKanban } from "lucide-react";
 import { useProjects, useCreateProject, useDeleteProject } from "@/hooks/use-projects";
+import { EmptyState } from "@/components/EmptyState";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,13 +115,13 @@ export default function DashboardPage() {
       </div>
 
       {!projects || projects.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex items-center justify-center py-16">
-            <p className="text-neutral-500 text-sm">
-              No projects yet. Create one to get started.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={FolderKanban}
+          title="No projects yet"
+          subtitle="Create your first project to start tracking test cases and releases."
+          ctaLabel="Create project"
+          onCta={() => setOpen(true)}
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (

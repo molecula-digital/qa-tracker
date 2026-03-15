@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag, MessageSquare, ClipboardList } from 'lucide-react'
+import { Tag, MessageSquare, ClipboardList, CheckCircle2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import type { Section, Item, TagKey, Note } from '../types/tracker'
 import { SECTION_ICONS, type SectionIconKey } from './SectionIcons'
 import { SectionColorPicker } from './SectionColorPicker'
@@ -15,10 +15,7 @@ function darkenColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
-  const dr = Math.round(r * 0.35)
-  const dg = Math.round(g * 0.35)
-  const db = Math.round(b * 0.35)
-  return `rgb(${dr}, ${dg}, ${db})`
+  return `rgb(${Math.round(r * 0.35)}, ${Math.round(g * 0.35)}, ${Math.round(b * 0.35)})`
 }
 
 const TAG_COLORS: Record<TagKey, string> = {
@@ -78,6 +75,8 @@ export function KanbanBoard({
             <KanbanColumn
               section={section}
               search={search}
+              index={i}
+              totalSections={sections.length}
               isNew={section.id === newestSectionId}
               isDragging={dragIndex === i}
               isDropTarget={dropIndex === i && dragIndex !== i}
@@ -95,6 +94,8 @@ export function KanbanBoard({
               onUpdateTitle={(title) => onUpdateSectionTitle(section.id, title)}
               onColorChange={(color) => onColorChange(section.id, color)}
               onIconChange={(icon) => onIconChange(section.id, icon)}
+              onMoveLeft={i > 0 ? () => onReorder(i, i - 1) : undefined}
+              onMoveRight={i < sections.length - 1 ? () => onReorder(i, i + 1) : undefined}
               onOpenTagPicker={(anchorEl, item) => onOpenTagPicker(anchorEl, item, section.id)}
             />
           </motion.div>
@@ -109,6 +110,8 @@ export function KanbanBoard({
 interface KanbanColumnProps {
   section: Section
   search: string
+  index: number
+  totalSections: number
   isNew: boolean
   isDragging: boolean
   isDropTarget: boolean
@@ -126,6 +129,8 @@ interface KanbanColumnProps {
   onUpdateTitle: (title: string) => void
   onColorChange: (color: string) => void
   onIconChange: (icon: string) => void
+  onMoveLeft?: () => void
+  onMoveRight?: () => void
   onOpenTagPicker: (anchorEl: HTMLButtonElement, item: Item) => void
 }
 
@@ -133,11 +138,13 @@ function KanbanColumn({
   section, search, isNew, isDragging, isDropTarget, isDraggingAny,
   onDragStart, onDragOver, onDragEnd, onDrop,
   onToggleItem, onAddItem, onDeleteItem, onAddNote, onDeleteNote,
-  onDeleteSection, onUpdateTitle, onColorChange, onIconChange, onOpenTagPicker,
+  onDeleteSection, onUpdateTitle, onColorChange, onIconChange,
+  onMoveLeft, onMoveRight, onOpenTagPicker,
 }: KanbanColumnProps) {
   const [addInputVal, setAddInputVal] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const [activePicker, setActivePicker] = useState<'color' | 'icon' | null>(null)
+  const [confirmDeleteSection, setConfirmDeleteSection] = useState(false)
   const menuBtnRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLInputElement>(null)
@@ -155,7 +162,6 @@ function KanbanColumn({
       lastSortedOrder.current = sorted.map((i) => i.id)
       return sorted
     }
-    // All checked — restore last known display order so nothing jumps
     if (lastSortedOrder.current.length > 0) {
       const pos = new Map(lastSortedOrder.current.map((id, idx) => [id, idx]))
       return items.slice().sort((a, b) => (pos.get(a.id) ?? 999) - (pos.get(b.id) ?? 999))
@@ -164,6 +170,7 @@ function KanbanColumn({
   })()
   const done = section.items.filter((i) => i.checked).length
   const total = section.items.length
+  const allDone = total > 0 && done === total
 
   useEffect(() => {
     if (isNew && titleRef.current) {
@@ -175,6 +182,15 @@ function KanbanColumn({
   const commitAdd = () => {
     const v = addInputVal.trim()
     if (v) { onAddItem(v); setAddInputVal('') }
+  }
+
+  const handleDeleteSection = () => {
+    if (total > 0 && !confirmDeleteSection) {
+      setConfirmDeleteSection(true)
+      return
+    }
+    onDeleteSection()
+    setConfirmDeleteSection(false)
   }
 
   const borderStyle = isDropTarget
@@ -227,7 +243,12 @@ function KanbanColumn({
           onMouseDown={(e) => e.stopPropagation()}
           style={{ flex: 1, fontSize: 13, fontWeight: 700, border: 'none', background: 'transparent', outline: 'none', color: '#e5e5e5', fontFamily: 'inherit', cursor: 'text', minWidth: 0, padding: '1px 2px' }}
         />
-        <span style={{ fontSize: 11, borderRadius: 99, padding: '1px 7px', flexShrink: 0, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.1)', color: '#e5e5e5' }}>
+        {allDone && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#4ade80', fontWeight: 600, flexShrink: 0 }}>
+            <CheckCircle2 size={12} /> Done
+          </span>
+        )}
+        <span style={{ fontSize: 11, borderRadius: 99, padding: '1px 7px', flexShrink: 0, whiteSpace: 'nowrap', background: allDone ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.1)', color: allDone ? '#4ade80' : '#e5e5e5' }}>
           {done}/{total}
         </span>
         <button
@@ -240,6 +261,53 @@ function KanbanColumn({
           ···
         </button>
       </motion.div>
+
+      {/* Reorder + section actions bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+        <div style={{ display: 'flex', gap: 2 }}>
+          <button
+            onClick={onMoveLeft}
+            disabled={!onMoveLeft}
+            title="Move left"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, border: 'none', background: 'transparent', cursor: onMoveLeft ? 'pointer' : 'default', color: onMoveLeft ? '#888' : '#333', fontSize: 12 }}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <button
+            onClick={onMoveRight}
+            disabled={!onMoveRight}
+            title="Move right"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, border: 'none', background: 'transparent', cursor: onMoveRight ? 'pointer' : 'default', color: onMoveRight ? '#888' : '#333', fontSize: 12 }}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+        {confirmDeleteSection ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 10, color: '#f87171' }}>Delete {total} items?</span>
+            <button
+              onClick={handleDeleteSection}
+              style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, border: '1px solid #dc2626', background: '#dc2626', color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => setConfirmDeleteSection(false)}
+              style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, border: '1px solid #444', background: 'transparent', color: '#888', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              No
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleDeleteSection}
+            title="Delete section"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: '#555' }}
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
+      </div>
 
       {/* Cards list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -305,7 +373,7 @@ function KanbanColumn({
         <SectionMenu ref={menuRef} anchorEl={menuBtnRef.current} sectionColor={section.color} SectionIcon={SectionIcon}
           onColor={() => { setMenuOpen(false); setActivePicker('color') }}
           onIcon={() => { setMenuOpen(false); setActivePicker('icon') }}
-          onDelete={() => { setMenuOpen(false); onDeleteSection() }}
+          onDelete={() => { setMenuOpen(false); handleDeleteSection() }}
           onClose={() => setMenuOpen(false)}
         />, document.body,
       )}
@@ -334,10 +402,20 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
   const tagBtnRef = useRef<HTMLButtonElement>(null)
   const [showNotes, setShowNotes] = useState(false)
   const [noteText, setNoteText] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const commitNote = () => {
     const v = noteText.trim()
     if (v) { onAddNote(v); setNoteText('') }
+  }
+
+  const handleDelete = () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true)
+      setTimeout(() => setConfirmDelete(false), 3000) // auto-cancel after 3s
+      return
+    }
+    onDelete()
   }
 
   const tagCount = item.tags.length
@@ -362,12 +440,26 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
         <span style={{ flex: 1, fontSize: 13, color: item.checked ? '#666' : '#e5e5e5', textDecoration: item.checked ? 'line-through' : 'none', lineHeight: 1.4, wordBreak: 'break-word' }}>
           {item.text}
         </span>
-        <button onClick={onDelete} title="Delete" style={{ display: 'inline-flex', padding: '0 2px', border: 'none', background: 'transparent', color: '#555', cursor: 'pointer', fontSize: 16, lineHeight: 1, flexShrink: 0 }}>
-          ×
-        </button>
+        {confirmDelete ? (
+          <button
+            onClick={handleDelete}
+            title="Confirm delete"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 2, padding: '1px 6px', border: '1px solid #dc2626', borderRadius: 4, background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: 10, lineHeight: 1, flexShrink: 0, fontFamily: 'inherit' }}
+          >
+            <Trash2 size={10} /> Delete?
+          </button>
+        ) : (
+          <button
+            onClick={handleDelete}
+            title="Delete item"
+            style={{ display: 'inline-flex', padding: '2px', border: 'none', background: 'transparent', color: '#444', cursor: 'pointer', lineHeight: 1, flexShrink: 0, borderRadius: 4 }}
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
       </div>
 
-      {/* Tag pills (read-only display) */}
+      {/* Tag pills */}
       {tagCount > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, paddingLeft: 22 }}>
           {item.tags.map((tag) => (
@@ -379,7 +471,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
         </div>
       )}
 
-      {/* Footer: always-visible action icons */}
+      {/* Footer actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, paddingLeft: 20 }}>
         <button
           ref={tagBtnRef}
@@ -400,7 +492,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
         </button>
       </div>
 
-      {/* Comments — tree-node UI */}
+      {/* Comments */}
       <AnimatePresence initial={false}>
         {showNotes && (
           <motion.div
@@ -411,17 +503,14 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
             style={{ overflow: 'hidden' }}
           >
             <div style={{ paddingLeft: 22, paddingTop: 6, borderTop: '1px solid #2a2a2a' }}>
-              {/* Tree nodes */}
               {noteCount > 0 && (
                 <div style={{ marginBottom: 8 }}>
                   {item.notes.map((note: Note, idx) => (
                     <div key={note.id}>
-                      {/* Inter-node connector — only between items */}
                       {idx > 0 && (
                         <div style={{ marginLeft: 5, width: 1, height: 10, background: '#333' }} />
                       )}
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                        {/* User avatar */}
                         <Avatar className="w-5 h-5 shrink-0 mt-0.5">
                           <AvatarFallback className="text-[8px] bg-neutral-700 text-neutral-300">
                             U
@@ -437,7 +526,6 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
                   ))}
                 </div>
               )}
-              {/* New comment input */}
               <div style={{ display: 'flex', gap: 5, paddingBottom: 4 }}>
                 <input
                   value={noteText}
