@@ -12,12 +12,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 
 function getHeaderColor(hex: string | undefined, isDark: boolean): string {
   if (!hex) return 'var(--kanban-header)'
@@ -192,8 +190,6 @@ function KanbanColumn({
   onOpenTagPicker, readOnly,
 }: KanbanColumnProps) {
   const [addInputVal, setAddInputVal] = useState('')
-  const [colorPickerOpen, setColorPickerOpen] = useState(false)
-  const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [iconGroup, setIconGroup] = useState(0)
   const titleRef = useRef<HTMLInputElement>(null)
   const addInputRef = useRef<HTMLInputElement>(null)
@@ -300,15 +296,94 @@ function KanbanColumn({
             >
               <MoreHorizontal size={14} />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={() => setColorPickerOpen(true)} className="gap-2">
-                <Palette size={14} />
-                Color
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setIconPickerOpen(true)} className="gap-2">
-                {SectionIcon ? <SectionIcon size={14} /> : <Sparkles size={14} />}
-                Icon
-              </DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-48">
+              {/* Color submenu */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="gap-2">
+                  <Palette size={14} />
+                  Color
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="p-3">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">
+                    Section color
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+                    {SECTION_COLORS.map((c) => {
+                      const active = (section.color ?? '') === c.value
+                      const bg = isDark ? c.darkBg : c.lightBg
+                      return (
+                        <button
+                          key={c.value || 'default'}
+                          title={c.label}
+                          onClick={() => onColorChange(c.value)}
+                          className="w-7 h-7 rounded-lg transition-transform hover:scale-110"
+                          style={{
+                            background: bg,
+                            border: active ? '2px solid var(--foreground)' : '1px solid var(--border)',
+                            boxShadow: active ? '0 0 0 2px var(--ring)' : 'none',
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              {/* Icon submenu */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="gap-2">
+                  {SectionIcon ? <SectionIcon size={14} /> : <Sparkles size={14} />}
+                  Icon
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-[248px] p-3">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">
+                    Section icon
+                  </p>
+                  <div className="flex gap-1 mb-2.5">
+                    {ICON_GROUPS.map((g, i) => (
+                      <Button
+                        key={g.label}
+                        variant={iconGroup === i ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setIconGroup(i)}
+                        className="flex-1 h-6 text-[11px] px-1"
+                      >
+                        {g.label}
+                      </Button>
+                    ))}
+                    <Button
+                      variant={!section.icon ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => onIconChange('')}
+                      className="h-6 text-[11px] px-2"
+                    >
+                      None
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {ICON_GROUPS[iconGroup].keys.map((key) => {
+                      const IconComp = SECTION_ICONS[key as SectionIconKey]
+                      const active = section.icon === key
+                      return (
+                        <Button
+                          key={key}
+                          variant="ghost"
+                          title={key}
+                          onClick={() => onIconChange(key)}
+                          className={`w-8 h-8 p-0 ${
+                            active
+                              ? 'bg-accent text-foreground border border-border'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <IconComp size={15} />
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onDeleteSection} className="gap-2 text-red-400 focus:text-red-300">
                 <Trash2 size={14} />
@@ -384,86 +459,6 @@ function KanbanColumn({
         </div>
       )}
 
-      {/* Color picker popover */}
-      <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
-        <PopoverTrigger className="sr-only">Color</PopoverTrigger>
-        <PopoverContent className="w-auto p-3" align="end">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">
-            Section color
-          </p>
-          <div className="flex flex-wrap gap-1.5 max-w-[200px]">
-            {SECTION_COLORS.map((c) => {
-              const active = (section.color ?? '') === c.value
-              const bg = isDark ? c.darkBg : c.lightBg
-              return (
-                <button
-                  key={c.value || 'default'}
-                  title={c.label}
-                  onClick={() => { onColorChange(c.value); setColorPickerOpen(false) }}
-                  className="w-7 h-7 rounded-lg transition-transform hover:scale-110"
-                  style={{
-                    background: bg,
-                    border: active ? '2px solid var(--foreground)' : '1px solid var(--border)',
-                    boxShadow: active ? '0 0 0 2px var(--ring)' : 'none',
-                  }}
-                />
-              )
-            })}
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      {/* Icon picker popover */}
-      <Popover open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
-        <PopoverTrigger className="sr-only">Icon</PopoverTrigger>
-        <PopoverContent className="w-[248px] p-3" align="end">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">
-            Section icon
-          </p>
-          <div className="flex gap-1 mb-2.5">
-            {ICON_GROUPS.map((g, i) => (
-              <Button
-                key={g.label}
-                variant={iconGroup === i ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIconGroup(i)}
-                className="flex-1 h-6 text-[11px] px-1"
-              >
-                {g.label}
-              </Button>
-            ))}
-            <Button
-              variant={!section.icon ? "default" : "outline"}
-              size="sm"
-              onClick={() => { onIconChange(''); setIconPickerOpen(false) }}
-              className="h-6 text-[11px] px-2"
-            >
-              None
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {ICON_GROUPS[iconGroup].keys.map((key) => {
-              const IconComp = SECTION_ICONS[key as SectionIconKey]
-              const active = section.icon === key
-              return (
-                <Button
-                  key={key}
-                  variant="ghost"
-                  title={key}
-                  onClick={() => { onIconChange(key); setIconPickerOpen(false) }}
-                  className={`w-8 h-8 p-0 ${
-                    active
-                      ? 'bg-accent text-foreground border border-border'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <IconComp size={15} />
-                </Button>
-              )
-            })}
-          </div>
-        </PopoverContent>
-      </Popover>
     </div>
   )
 }
