@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag, MessageSquare, ClipboardList, CheckCircle2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
+import { Tag, MessageSquare, ClipboardList, CheckCircle2, ChevronLeft, ChevronRight, Trash2, Plus } from 'lucide-react'
 import type { Section, Item, TagKey, Note } from '../types/tracker'
 import { SECTION_ICONS, type SectionIconKey } from './SectionIcons'
 import { SectionColorPicker } from './SectionColorPicker'
@@ -364,18 +364,19 @@ function KanbanColumn({
       </div>
 
       {/* Add item */}
-      <div className="border-t border-border/30 p-2 rounded-b-[12px]">
+      <div className="border-t border-border/20 px-3 py-2 rounded-b-[12px]">
         <div className="flex items-center gap-1.5">
+          <Plus size={12} className="text-muted-foreground/40 shrink-0" />
           <input
             ref={addInputRef}
             value={addInputVal}
             onChange={(e) => setAddInputVal(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') commitAdd(); if (e.key === 'Escape') setAddInputVal('') }}
             placeholder="Add item…"
-            className="flex-1 border-none bg-transparent text-xs text-foreground outline-none font-[inherit] py-0.5"
+            className="flex-1 border-none bg-transparent text-xs text-foreground outline-none font-[inherit] py-0.5 placeholder:text-muted-foreground/40"
           />
           {addInputVal.trim() && (
-            <Button onClick={commitAdd} size="sm" className="h-6 px-2 text-[11px] gap-1 bg-emerald-700 hover:bg-emerald-600 text-white shrink-0">
+            <Button onClick={commitAdd} size="sm" className="h-6 px-2.5 text-[11px] shrink-0">
               Add
             </Button>
           )}
@@ -442,17 +443,17 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
   }
 
   return (
-    <div className="bg-kanban-card border border-kanban-border rounded-[10px] px-[11px] py-[9px] flex flex-col gap-1.5 shadow-sm">
+    <div className="group/card bg-kanban-card border border-kanban-border rounded-xl px-3 py-2.5 flex flex-col gap-2 shadow-sm hover:bg-kanban-card-hover hover:border-border transition-colors">
 
       {/* Main row */}
-      <div className="flex items-start gap-[7px]">
+      <div className="flex items-start gap-2.5">
         <Checkbox
           checked={item.checked}
           onCheckedChange={onToggle}
-          className="mt-0.5 shrink-0"
+          className="mt-[3px] shrink-0"
         />
-        <span className={`flex-1 text-[13px] leading-[1.4] break-words ${
-          item.checked ? 'text-muted-foreground line-through' : 'text-foreground'
+        <span className={`flex-1 text-[13px] leading-relaxed break-words transition-colors ${
+          item.checked ? 'text-muted-foreground/60 line-through' : 'text-foreground'
         }`}>
           {item.text}
         </span>
@@ -472,7 +473,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
             size="sm"
             onClick={handleDelete}
             title="Delete item"
-            className="w-5 h-5 p-0 text-muted-foreground hover:text-red-400 shrink-0"
+            className="w-5 h-5 p-0 text-muted-foreground/40 hover:text-red-400 shrink-0 opacity-0 group-hover/card:opacity-100 transition-opacity"
           >
             <Trash2 size={12} />
           </Button>
@@ -481,27 +482,33 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
 
       {/* Tag pills */}
       {tagCount > 0 && (
-        <div className="flex flex-wrap gap-1 pl-[22px]">
+        <div className="flex flex-wrap gap-1 pl-7">
           {item.tags.map((tag) => (
-            <span key={tag} style={{ background: TAG_COLORS[tag] + '22', color: TAG_COLORS[tag], borderColor: TAG_COLORS[tag] + '44' }} className="inline-flex items-center gap-[3px] text-[10px] font-medium px-1.5 py-px rounded-full border">
-              <span style={{ background: TAG_COLORS[tag] }} className="w-[5px] h-[5px] rounded-full" />
+            <span
+              key={tag}
+              style={{ background: TAG_COLORS[tag] + '15', color: TAG_COLORS[tag], borderColor: TAG_COLORS[tag] + '30' }}
+              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border"
+            >
+              <span style={{ background: TAG_COLORS[tag] }} className="w-1.5 h-1.5 rounded-full" />
               {tag}
             </span>
           ))}
         </div>
       )}
 
-      {/* Footer actions */}
-      <div className="flex items-center gap-0.5 pl-5">
+      {/* Footer actions — visible on hover or when active */}
+      <div className={`flex items-center gap-0.5 pl-6 ${
+        (tagCount > 0 || noteCount > 0) ? '' : 'opacity-0 group-hover/card:opacity-100 transition-opacity'
+      }`}>
         <Button
           ref={tagBtnRef}
           variant="ghost"
           size="sm"
           onClick={() => onOpenTagPicker(tagBtnRef.current!, item)}
           title="Tags"
-          className={`h-6 px-1.5 text-[10px] gap-1 ${tagCount > 0 ? 'text-emerald-500' : 'text-muted-foreground'}`}
+          className={`h-5 px-1.5 text-[10px] gap-1 ${tagCount > 0 ? 'text-emerald-500' : 'text-muted-foreground/50 hover:text-muted-foreground'}`}
         >
-          <Tag size={13} />
+          <Tag size={12} />
           {tagCount > 0 && <span className="font-medium">{tagCount}</span>}
         </Button>
         <Button
@@ -509,9 +516,9 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
           size="sm"
           onClick={() => setShowNotes((v) => !v)}
           title="Comments"
-          className={`h-6 px-1.5 text-[10px] gap-1 ${noteCount > 0 ? 'text-blue-400' : 'text-muted-foreground'}`}
+          className={`h-5 px-1.5 text-[10px] gap-1 ${noteCount > 0 ? 'text-blue-400' : 'text-muted-foreground/50 hover:text-muted-foreground'}`}
         >
-          <MessageSquare size={13} />
+          <MessageSquare size={12} />
           {noteCount > 0 && <span className="font-medium">{noteCount}</span>}
         </Button>
       </div>
@@ -526,41 +533,49 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
             transition={{ duration: 0.18 }}
             className="overflow-hidden"
           >
-            <div className="pl-[22px] pt-1.5 border-t border-kanban-border">
+            <div className="pl-7 pt-2 border-t border-kanban-border/50">
               {noteCount > 0 && (
-                <div className="mb-2">
+                <div className="mb-2.5 space-y-0">
                   {item.notes.map((note: Note, idx) => (
                     <div key={note.id}>
                       {idx > 0 && (
-                        <div className="ml-[5px] w-px h-[10px] bg-kanban-border" />
+                        <div className="ml-2.5 w-px h-2 bg-border/40" />
                       )}
-                      <div className="flex items-start gap-2">
+                      <div className="flex items-start gap-2 group/note">
                         <Avatar className="w-5 h-5 shrink-0 mt-0.5">
-                          <AvatarFallback className="text-[8px] bg-muted text-muted-foreground">
+                          <AvatarFallback className="text-[8px] bg-muted text-muted-foreground font-mono">
                             U
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0 pb-0.5">
-                          <p className="text-[11px] text-foreground/80 leading-[1.45] m-0 break-words">{note.text}</p>
-                          <span className="text-[9px] text-muted-foreground mt-0.5 block tracking-[0.01em]">{formatTs(note.ts)}</span>
+                          <p className="text-[11px] text-foreground/80 leading-relaxed m-0 break-words">{note.text}</p>
+                          <span className="text-[9px] text-muted-foreground/60 mt-0.5 block tracking-wide font-mono">{formatTs(note.ts)}</span>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => onDeleteNote(note.id)} title="Delete comment" className="w-5 h-5 p-0 text-muted-foreground hover:text-red-400 shrink-0">&times;</Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDeleteNote(note.id)}
+                          title="Delete comment"
+                          className="w-4 h-4 p-0 text-muted-foreground/30 hover:text-red-400 shrink-0 opacity-0 group-hover/note:opacity-100 transition-opacity"
+                        >
+                          &times;
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              <div className="flex gap-[5px] pb-1">
+              <div className="flex gap-1.5 pb-1">
                 <input
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') commitNote(); if (e.key === 'Escape') setShowNotes(false) }}
                   placeholder="Write a comment…"
                   autoFocus
-                  className="flex-1 text-[11px] border border-kanban-border rounded-md px-[7px] py-1 outline-none font-[inherit] text-foreground bg-kanban-input-bg"
+                  className="flex-1 text-[11px] border border-kanban-border rounded-lg px-2.5 py-1.5 outline-none font-[inherit] text-foreground bg-kanban-input-bg placeholder:text-muted-foreground/40 focus:border-border focus:ring-1 focus:ring-ring/30 transition-colors"
                 />
                 {noteText.trim() && (
-                  <Button onClick={commitNote} size="sm" className="h-6 px-2 text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white shrink-0">
+                  <Button onClick={commitNote} size="sm" className="h-7 px-2.5 text-[10px] shrink-0">
                     Save
                   </Button>
                 )}

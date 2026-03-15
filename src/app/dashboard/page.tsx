@@ -23,6 +23,17 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 /* ── helpers ── */
 
@@ -152,17 +163,38 @@ function ProjectCard({ project, onDelete }: { project: ProjectStats; onDelete: (
                 )}
               </div>
             </div>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (confirm("Delete this project?")) onDelete();
-              }}
-              className="shrink-0 p-1.5 rounded-md text-muted-foreground/40 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
-              title="Delete project"
-            >
-              <Trash2 size={14} />
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="shrink-0 p-1.5 rounded-md text-muted-foreground/40 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                title="Delete project"
+              >
+                <Trash2 size={14} />
+              </AlertDialogTrigger>
+              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete project</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete &ldquo;{project.name}&rdquo; and all its sections, items, and notes. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onDelete();
+                    }}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           {/* Progress bar */}

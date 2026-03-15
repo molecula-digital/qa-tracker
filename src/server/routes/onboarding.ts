@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
-import { requireAuth } from "@/server/middleware/auth";
+import { requireAuth, type AuthEnv } from "@/server/middleware/auth";
 import { db } from "@/server/db";
 import { user } from "@/server/db/schema";
 
-const onboarding = new Hono();
+const onboarding = new Hono<AuthEnv>();
 
 onboarding.use("*", requireAuth);
 

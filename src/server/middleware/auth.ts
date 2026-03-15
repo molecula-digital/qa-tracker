@@ -1,7 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import { auth, type Session } from "@/lib/auth";
 
-type AuthEnv = {
+export type AuthEnv = {
   Variables: {
     session: Session["session"];
     user: Session["user"];
