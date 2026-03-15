@@ -8,7 +8,9 @@ import { eq, and, gt, asc } from "drizzle-orm";
 import { db } from "@/server/db";
 import * as schema from "@/server/db/schema";
 
-const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripeClient = new Stripe(
+  process.env.STRIPE_SECRET_KEY || "sk_placeholder_for_build"
+);
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
