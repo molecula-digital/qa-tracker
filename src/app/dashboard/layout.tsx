@@ -100,11 +100,17 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (isPending) return;
-    if (
-      session &&
-      !session.user.onboardingFinished &&
-      pathname !== "/dashboard/onboarding"
-    ) {
+    if (!session) return;
+    if (pathname === "/dashboard/onboarding") return;
+
+    // User hasn't completed onboarding yet
+    if (!session.user.onboardingFinished) {
+      router.push("/dashboard/onboarding");
+      return;
+    }
+
+    // Onboarding done but no active workspace — need to create or join one
+    if (!session.session.activeOrganizationId) {
       router.push("/dashboard/onboarding");
     }
   }, [session, isPending, pathname, router]);
