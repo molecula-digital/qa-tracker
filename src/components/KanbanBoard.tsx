@@ -87,7 +87,7 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-6 pt-1 h-full">
+    <div className="flex gap-3 overflow-x-auto overflow-y-hidden items-start pb-6 pt-1 h-full">
       <AnimatePresence initial={false}>
         {sections.map((section, i) => (
           <motion.div
@@ -97,7 +97,7 @@ export function KanbanBoard({
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.88, x: -24 }}
             transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-            className="shrink-0 flex h-full"
+            className="shrink-0 flex max-h-full"
           >
             <KanbanColumn
               section={section}
