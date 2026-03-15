@@ -117,8 +117,16 @@ The generated migration will try to add `slug` as NOT NULL without a default. Ed
 ALTER TABLE "project" ADD COLUMN "is_public" boolean DEFAULT false NOT NULL;
 ALTER TABLE "project" ADD COLUMN "slug" text;
 
--- Backfill: use project id as temporary slug
-UPDATE "project" SET "slug" = "id" WHERE "slug" IS NULL;
+-- Backfill: slugify existing project names (lowercase, replace spaces with hyphens, strip special chars)
+UPDATE "project" SET "slug" = LOWER(REGEXP_REPLACE(REGEXP_REPLACE(TRIM("name"), '[^a-zA-Z0-9\s-]', '', 'g'), '[\s]+', '-', 'g')) WHERE "slug" IS NULL;
+-- Handle any empty slugs (fallback to id)
+UPDATE "project" SET "slug" = "id" WHERE "slug" IS NULL OR "slug" = '';
+-- Handle duplicates within same org by appending random suffix
+UPDATE "project" p1 SET "slug" = p1."slug" || '-' || SUBSTR(MD5(RANDOM()::TEXT), 1, 4)
+WHERE EXISTS (
+  SELECT 1 FROM "project" p2
+  WHERE p2."organization_id" = p1."organization_id" AND p2."slug" = p1."slug" AND p2."id" < p1."id"
+);
 
 ALTER TABLE "project" ALTER COLUMN "slug" SET NOT NULL;
 CREATE UNIQUE INDEX "project_org_slug_uidx" ON "project" ("organization_id", "slug");
@@ -156,15 +164,19 @@ import { slugify, slugifyWithSuffix } from "@/lib/slugify";
 In the POST handler (around line 119-132), after `const id = crypto.randomUUID();`, add slug generation with collision retry:
 
 ```ts
-    // Generate slug from name
+    // Generate slug from name with collision retry
     let slug = slugify(body.name);
+    let slugAvailable = false;
     for (let attempt = 0; attempt < 3; attempt++) {
       const [existing] = await db
         .select({ id: project.id })
         .from(project)
         .where(and(eq(project.organizationId, orgId), eq(project.slug, slug)));
-      if (!existing) break;
+      if (!existing) { slugAvailable = true; break; }
       slug = slugifyWithSuffix(body.name);
+    }
+    if (!slugAvailable) {
+      return c.json({ error: "Could not generate unique slug" }, 409);
     }
 ```
 
@@ -267,6 +279,15 @@ import { project, section, item, itemTag } from "@/server/db/schema";
 import { eq, and, inArray, asc } from "drizzle-orm";
 
 const publicBoard = new Hono();
+
+// CORS for public endpoints — allow any origin (read-only data)
+publicBoard.use("*", async (c, next) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  c.header("Access-Control-Allow-Headers", "Content-Type");
+  if (c.req.method === "OPTIONS") return c.text("", 204);
+  await next();
+});
 
 // GET /api/public/board/:orgSlug/:projectSlug
 publicBoard.get("/board/:orgSlug/:projectSlug", async (c) => {
@@ -553,7 +574,6 @@ import { useQuery } from "@tanstack/react-query";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { EmptyState } from "@/components/EmptyState";
 import { LayoutGrid } from "lucide-react";
-import type { Metadata } from "next";
 
 interface PublicSection {
   title: string;
@@ -748,19 +768,28 @@ git commit -m "feat: add slug and isPublic to Project interface"
 **Files:**
 - Modify: `src/app/dashboard/projects/[id]/page.tsx`
 
+- [ ] **Step 0: Install shadcn Switch component**
+
+```bash
+pnpm dlx shadcn@latest add switch
+```
+
 - [ ] **Step 1: Add imports**
 
-At the top of the file, add these imports:
+At the top of the file, add/update these imports:
 
 ```ts
+// Add useEffect to the existing React import (line 3):
+import { use, useState, useCallback, useMemo, useEffect } from "react";
+
+// Add these new imports:
 import { useUpdateProject } from "@/hooks/use-projects";
+import { organization as orgClient } from "@/lib/auth-client";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, Copy, ExternalLink, Check } from "lucide-react";
 ```
-
-Remove `useProject` from current imports if it's already there (line 11) — it should already be imported. Add `useUpdateProject` alongside it.
 
 - [ ] **Step 2: Create the ProjectSettings component**
 
@@ -777,13 +806,18 @@ function ProjectSettings({ project }: { project: { id: string; name: string; des
   const [description, setDescription] = useState(project.description ?? "");
   const [copied, setCopied] = useState(false);
   const [slugError, setSlugError] = useState("");
+  const [orgSlug, setOrgSlug] = useState("");
 
-  const publicUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/p/${project.slug}/${slug}`
+  useEffect(() => {
+    orgClient.getFullOrganization().then((result) => {
+      if (result.data?.slug) setOrgSlug(result.data.slug);
+    });
+  }, []);
+
+  const publicUrl = orgSlug && typeof window !== "undefined"
+    ? `${window.location.origin}/p/${orgSlug}/${slug}`
     : "";
 
-  // We need the org slug — derive from current URL or fetch
-  // For now, we'll construct the URL after save
   const handleTogglePublic = (checked: boolean) => {
     setIsPublic(checked);
     updateProject.mutate({ id: project.id, isPublic: checked });
@@ -934,33 +968,7 @@ Add the TabsContent after the stats TabsContent (after line 638):
 </TabsContent>
 ```
 
-- [ ] **Step 4: Fix the public URL to use the actual org slug**
-
-The `ProjectSettings` component needs the org slug. Add a query or derive it. The simplest approach: use the `organization` import from `@/lib/auth-client` that's used in the settings page. Since the project page doesn't import it yet, we need to get the org slug.
-
-Add to the top of the file:
-
-```ts
-import { organization as orgClient } from "@/lib/auth-client";
-```
-
-Inside `ProjectSettings`, fetch the org slug:
-
-```ts
-const [orgSlug, setOrgSlug] = useState("");
-
-useEffect(() => {
-  orgClient.getFullOrganization().then((result) => {
-    if (result.data?.slug) setOrgSlug(result.data.slug);
-  });
-}, []);
-
-const publicUrl = orgSlug
-  ? `${typeof window !== "undefined" ? window.location.origin : ""}/p/${orgSlug}/${slug}`
-  : "";
-```
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add src/app/dashboard/projects/[id]/page.tsx src/hooks/use-projects.ts
