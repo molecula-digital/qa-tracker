@@ -97,7 +97,7 @@ export function KanbanBoard({
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.88, x: -24 }}
             transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-            className="shrink-0 flex max-h-full"
+            className="shrink-0 flex"
           >
             <KanbanColumn
               section={section}
@@ -254,7 +254,7 @@ function KanbanColumn({
       onDragOver={(e) => { e.preventDefault(); onDragOver() }}
       onDragEnd={onDragEnd}
       onDrop={(e) => { e.preventDefault(); onDrop() }}
-      className={`w-[300px] shrink-0 flex flex-col max-h-full bg-kanban-column rounded-[14px] transition-[box-shadow,opacity,border-color] duration-150 ${
+      className={`w-[300px] shrink-0 flex flex-col max-h-[calc(100vh-9rem)] bg-kanban-column rounded-[14px] transition-[box-shadow,opacity,border-color] duration-150 ${
         isDragging ? 'opacity-60 shadow-xl' : 'shadow-sm'
       } ${
         isDropTarget
