@@ -16,4 +16,5 @@ export const {
   signOut,
   useSession,
   organization,
+  subscription,
 } = authClient;
