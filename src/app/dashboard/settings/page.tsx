@@ -86,7 +86,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-8">
-      <h1 className="text-2xl font-semibold text-neutral-900">Settings</h1>
+      <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
 
       {/* Account section */}
       <Card>
@@ -95,14 +95,14 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <p className="text-sm text-neutral-500">Name</p>
-            <p className="text-sm text-neutral-900">
+            <p className="text-sm text-muted-foreground">Name</p>
+            <p className="text-sm text-foreground">
               {session?.user?.name ?? "--"}
             </p>
           </div>
           <div>
-            <p className="text-sm text-neutral-500">Email</p>
-            <p className="text-sm text-neutral-900">
+            <p className="text-sm text-muted-foreground">Email</p>
+            <p className="text-sm text-foreground">
               {session?.user?.email ?? "--"}
             </p>
           </div>
@@ -124,14 +124,14 @@ export default function SettingsPage() {
           ) : members.length === 0 ? (
             <p className="text-sm text-neutral-500">No members found.</p>
           ) : (
-            <ul className="divide-y divide-neutral-200">
+            <ul className="divide-y divide-border">
               {members.map((member) => (
                 <li
                   key={member.id}
                   className="flex items-center justify-between py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-neutral-900">
+                    <p className="text-sm font-medium text-foreground">
                       {member.user.name}
                     </p>
                     <p className="text-xs text-neutral-500">
@@ -155,13 +155,13 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           {inviteError && (
-            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-md border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-400">
               {inviteError}
             </div>
           )}
 
           {inviteSuccess && (
-            <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            <div className="mb-4 rounded-md border border-green-800 bg-green-950 px-4 py-3 text-sm text-green-400">
               Invitation sent successfully.
             </div>
           )}

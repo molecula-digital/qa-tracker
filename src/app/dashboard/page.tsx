@@ -53,7 +53,7 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold text-neutral-900">Projects</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Projects</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger>
             <Button>New project</Button>
@@ -125,14 +125,14 @@ export default function DashboardPage() {
           {projects.map((project) => (
             <Card
               key={project.id}
-              className="group hover:border-neutral-400 transition-colors"
+              className="group hover:border-neutral-500 transition-colors bg-card"
             >
               <CardContent className="p-5 flex items-center justify-between">
                 <Link
                   href={`/dashboard/projects/${project.id}`}
                   className="flex-1 min-w-0"
                 >
-                  <p className="text-sm font-medium text-neutral-900 truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {project.name}
                   </p>
                   {project.description && (
@@ -144,7 +144,7 @@ export default function DashboardPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-4 shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="ml-4 shrink-0 text-red-400 hover:text-red-300 hover:bg-red-950 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => {
                     e.preventDefault();
                     if (confirm("Delete this project?")) {

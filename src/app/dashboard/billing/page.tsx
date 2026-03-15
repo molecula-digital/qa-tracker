@@ -108,7 +108,7 @@ export default function BillingPage() {
   if (loading) {
     return (
       <div className="max-w-4xl">
-        <h1 className="text-2xl font-semibold text-neutral-900 mb-8">
+        <h1 className="text-2xl font-semibold text-foreground mb-8">
           Billing
         </h1>
         <p className="text-sm text-neutral-500">Loading plans...</p>
@@ -118,7 +118,7 @@ export default function BillingPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-semibold text-neutral-900 mb-2">Billing</h1>
+      <h1 className="text-2xl font-semibold text-foreground mb-2">Billing</h1>
       <p className="text-neutral-500 mb-8">
         Manage your subscription and billing details.
       </p>
@@ -131,7 +131,7 @@ export default function BillingPage() {
             <Card
               key={plan.planId}
               className={`flex flex-col ${
-                isCurrent ? "border-neutral-900 ring-1 ring-neutral-900" : ""
+                isCurrent ? "border-primary ring-1 ring-primary" : ""
               }`}
             >
               <CardHeader>
@@ -140,7 +140,7 @@ export default function BillingPage() {
                   {isCurrent && <Badge>Current</Badge>}
                 </div>
                 <div className="mt-2">
-                  <span className="text-3xl font-semibold text-neutral-900">
+                  <span className="text-3xl font-semibold text-foreground">
                     {plan.price}
                   </span>
                   {plan.period && (
@@ -156,9 +156,9 @@ export default function BillingPage() {
                   {plan.features.map((feature) => (
                     <li
                       key={feature}
-                      className="flex items-start gap-2 text-sm text-neutral-600"
+                      className="flex items-start gap-2 text-sm text-muted-foreground"
                     >
-                      <Check className="w-4 h-4 text-neutral-900 mt-0.5 shrink-0" strokeWidth={2} />
+                      <Check className="w-4 h-4 text-foreground mt-0.5 shrink-0" strokeWidth={2} />
                       {feature}
                     </li>
                   ))}

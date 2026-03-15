@@ -21,6 +21,8 @@ import {
 import { useCreateNote, useDeleteNote } from "@/hooks/use-notes";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TagPicker } from "@/components/TagPicker";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import type { Item, TagKey } from "@/types/tracker";
 
 export default function ProjectPage({
@@ -232,7 +234,7 @@ export default function ProjectPage({
 
   if (projectError) {
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-red-400 text-sm">
         Failed to load project: {projectError.message}
       </p>
     );
@@ -245,69 +247,69 @@ export default function ProjectPage({
   const sections = board?.sections ?? [];
 
   return (
-    <div>
-      <div className="mb-6">
-        <Link
-          href="/dashboard"
-          className="text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
-        >
-          &larr; Back to projects
-        </Link>
+    <div className="flex flex-col h-[calc(100vh-2rem)]">
+      {/* Header bar */}
+      <div className="flex items-center justify-between mb-4 shrink-0">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard"
+            className="text-neutral-500 hover:text-neutral-300 text-sm transition-colors"
+          >
+            &larr; Projects
+          </Link>
+          <span className="text-neutral-700">/</span>
+          <h1 className="text-lg font-medium text-neutral-200">
+            {project.name}
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+            />
+            <Input
+              type="text"
+              placeholder="Search items..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 w-48 h-8 text-sm bg-neutral-800 border-neutral-700 text-neutral-200 placeholder:text-neutral-500"
+            />
+          </div>
+          <Button
+            onClick={handleAddSection}
+            disabled={createSection.isPending}
+            size="sm"
+            className="h-8 gap-1"
+          >
+            <Plus size={14} /> Add section
+          </Button>
+        </div>
       </div>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-neutral-900">
-          {project.name}
-        </h1>
-        {project.description && (
-          <p className="text-sm text-neutral-500 mt-1">
-            {project.description}
-          </p>
+      {/* Board -- fills remaining space */}
+      <div className="flex-1 overflow-hidden">
+        {loadingBoard ? (
+          <p className="text-neutral-500 text-sm">Loading board...</p>
+        ) : (
+          <KanbanBoard
+            sections={sections}
+            search={search}
+            newestSectionId={newestSectionId}
+            onToggleItem={handleToggleItem}
+            onAddItem={handleAddItem}
+            onDeleteItem={handleDeleteItem}
+            onAddNote={handleAddNote}
+            onDeleteNote={handleDeleteNote}
+            onDeleteSection={handleDeleteSection}
+            onUpdateSectionTitle={handleUpdateSectionTitle}
+            onColorChange={handleColorChange}
+            onIconChange={handleIconChange}
+            onReorder={handleReorder}
+            onOpenTagPicker={handleOpenTagPicker}
+          />
         )}
       </div>
-
-      {/* Toolbar: search + add section */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex-1 flex items-center gap-2 px-3 py-2 border border-neutral-200 rounded-lg">
-          <Search size={14} className="text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Search items..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 text-sm outline-none bg-transparent"
-          />
-        </div>
-        <button
-          onClick={handleAddSection}
-          disabled={createSection.isPending}
-          className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-sm rounded-lg hover:bg-neutral-800 disabled:opacity-50"
-        >
-          <Plus size={14} /> Add section
-        </button>
-      </div>
-
-      {/* Board */}
-      {loadingBoard ? (
-        <p className="text-neutral-500 text-sm">Loading board...</p>
-      ) : (
-        <KanbanBoard
-          sections={sections}
-          search={search}
-          newestSectionId={newestSectionId}
-          onToggleItem={handleToggleItem}
-          onAddItem={handleAddItem}
-          onDeleteItem={handleDeleteItem}
-          onAddNote={handleAddNote}
-          onDeleteNote={handleDeleteNote}
-          onDeleteSection={handleDeleteSection}
-          onUpdateSectionTitle={handleUpdateSectionTitle}
-          onColorChange={handleColorChange}
-          onIconChange={handleIconChange}
-          onReorder={handleReorder}
-          onOpenTagPicker={handleOpenTagPicker}
-        />
-      )}
 
       {/* Tag picker popup */}
       {tagPickerState && (

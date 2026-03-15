@@ -10,9 +10,9 @@ import { SectionMenu } from './SectionMenu'
 import { PlusIcon } from './Icons'
 
 const TAG_COLORS: Record<TagKey, string> = {
-  bug: '#c44444',
-  question: '#c48a00',
-  later: '#2a6ab8',
+  bug: '#e05555',
+  question: '#d4a020',
+  later: '#4a8ae0',
 }
 
 // ─── Board ────────────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ export function KanbanBoard({
   }
 
   return (
-    <div style={{ display: 'flex', gap: 12, overflowX: 'auto', alignItems: 'flex-start', paddingBottom: 24, paddingTop: 4, minHeight: '60vh' }}>
+    <div style={{ display: 'flex', gap: 12, overflowX: 'auto', alignItems: 'flex-start', paddingBottom: 24, paddingTop: 4, height: '100%' }}>
       <AnimatePresence initial={false}>
         {sections.map((section, i) => (
           <motion.div
@@ -168,10 +168,10 @@ function KanbanColumn({
   const borderStyle = isDropTarget
     ? '2px dashed #7a8c5c'
     : isDragging
-    ? '2px dashed rgba(90,70,50,0.3)'
+    ? '2px dashed rgba(255,255,255,0.15)'
     : isDraggingAny
-    ? '2px dashed rgba(90,70,50,0.2)'
-    : '2px solid rgba(90,70,50,0.1)'
+    ? '2px dashed rgba(255,255,255,0.1)'
+    : '2px solid rgba(255,255,255,0.06)'
 
   return (
     <div
@@ -182,8 +182,8 @@ function KanbanColumn({
       onDrop={(e) => { e.preventDefault(); onDrop() }}
       style={{
         width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column',
-        background: '#f5f1ea', border: borderStyle, borderRadius: 14,
-        boxShadow: isDragging ? '0 12px 32px rgba(0,0,0,0.12)' : '0 1px 4px rgba(0,0,0,0.06)',
+        background: '#1a1a1a', border: borderStyle, borderRadius: 14,
+        boxShadow: isDragging ? '0 12px 32px rgba(0,0,0,0.5)' : '0 1px 4px rgba(0,0,0,0.3)',
         opacity: isDragging ? 0.6 : 1,
         transition: 'box-shadow 0.15s, opacity 0.15s, border-color 0.15s',
       }}
@@ -191,18 +191,18 @@ function KanbanColumn({
       {/* Header */}
       <motion.div
         animate={isNew
-          ? { backgroundColor: ['#c8e6aa', '#b8d898', section.color || '#ddd5c2'] }
-          : { backgroundColor: section.color || '#ddd5c2' }
+          ? { backgroundColor: ['#2d4a1e', '#264016', section.color || '#2a2a2a'] }
+          : { backgroundColor: section.color || '#2a2a2a' }
         }
         transition={{ duration: 1.2, ease: 'easeOut' }}
         style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px',
-          borderRadius: '12px 12px 0 0', borderBottom: '1px solid rgba(0,0,0,0.06)',
+          borderRadius: '12px 12px 0 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
           cursor: 'grab', userSelect: 'none',
         }}
       >
         {SectionIcon && (
-          <span style={{ display: 'flex', alignItems: 'center', color: '#5a6b48', flexShrink: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'center', color: '#8fa870', flexShrink: 0 }}>
             <SectionIcon size={14} />
           </span>
         )}
@@ -213,9 +213,9 @@ function KanbanColumn({
           onBlur={(e) => onUpdateTitle(e.target.value)}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
-          style={{ flex: 1, fontSize: 13, fontWeight: 700, border: 'none', background: 'transparent', outline: 'none', color: '#3a3228', fontFamily: 'inherit', cursor: 'text', minWidth: 0, padding: '1px 2px' }}
+          style={{ flex: 1, fontSize: 13, fontWeight: 700, border: 'none', background: 'transparent', outline: 'none', color: '#e5e5e5', fontFamily: 'inherit', cursor: 'text', minWidth: 0, padding: '1px 2px' }}
         />
-        <span style={{ fontSize: 11, borderRadius: 99, padding: '1px 7px', flexShrink: 0, whiteSpace: 'nowrap', background: 'rgba(0,0,0,0.1)', color: '#3a3228' }}>
+        <span style={{ fontSize: 11, borderRadius: 99, padding: '1px 7px', flexShrink: 0, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.1)', color: '#e5e5e5' }}>
           {done}/{total}
         </span>
         <button
@@ -223,7 +223,7 @@ function KanbanColumn({
           title="Section options"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v) }}
-          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 22, borderRadius: 6, flexShrink: 0, border: 'none', background: 'transparent', cursor: 'pointer', color: '#8a7d6e', fontSize: 15, letterSpacing: 1, lineHeight: 1 }}
+          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 22, borderRadius: 6, flexShrink: 0, border: 'none', background: 'transparent', cursor: 'pointer', color: '#888', fontSize: 15, letterSpacing: 1, lineHeight: 1 }}
         >
           ···
         </button>
@@ -254,13 +254,13 @@ function KanbanColumn({
           ))}
         </AnimatePresence>
         {filtered.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 12px', color: '#b0a090' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 12px', color: '#555' }}>
             <ClipboardList size={28} strokeWidth={1.4} />
             <span style={{ fontSize: 12 }}>{search ? 'No matches' : 'No items yet'}</span>
             {!search && (
               <button
                 onClick={() => addInputRef.current?.focus()}
-                style={{ fontSize: 11, padding: '4px 12px', border: '1px dashed #c8bfb0', borderRadius: 8, background: 'transparent', color: '#8a7d6e', cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ fontSize: 11, padding: '4px 12px', border: '1px dashed #444', borderRadius: 8, background: 'transparent', color: '#888', cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 + Add first item
               </button>
@@ -270,7 +270,7 @@ function KanbanColumn({
       </div>
 
       {/* Add item */}
-      <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', padding: '8px', borderRadius: '0 0 12px 12px' }}>
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', padding: '8px', borderRadius: '0 0 12px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <input
             ref={addInputRef}
@@ -278,7 +278,7 @@ function KanbanColumn({
             onChange={(e) => setAddInputVal(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') commitAdd(); if (e.key === 'Escape') setAddInputVal('') }}
             placeholder="Add item…"
-            style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 12, color: '#3a3228', outline: 'none', fontFamily: 'inherit', padding: '2px 0' }}
+            style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 12, color: '#e5e5e5', outline: 'none', fontFamily: 'inherit', padding: '2px 0' }}
           />
           {addInputVal.trim() && (
             <button onClick={commitAdd} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '3px 8px', border: '1px solid #7a8c5c', borderRadius: 6, background: '#7a8c5c', fontSize: 11, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
@@ -338,16 +338,16 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
   }
 
   return (
-    <div style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: 10, padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+    <div style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: 10, padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
 
       {/* Main row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
         <input type="checkbox" checked={item.checked} onChange={onToggle}
           style={{ marginTop: 2, accentColor: '#7a8c5c', flexShrink: 0, cursor: 'pointer' }} />
-        <span style={{ flex: 1, fontSize: 13, color: item.checked ? '#a09080' : '#3a3228', textDecoration: item.checked ? 'line-through' : 'none', lineHeight: 1.4, wordBreak: 'break-word' }}>
+        <span style={{ flex: 1, fontSize: 13, color: item.checked ? '#666' : '#e5e5e5', textDecoration: item.checked ? 'line-through' : 'none', lineHeight: 1.4, wordBreak: 'break-word' }}>
           {item.text}
         </span>
-        <button onClick={onDelete} title="Delete" style={{ display: 'inline-flex', padding: '0 2px', border: 'none', background: 'transparent', color: '#c0a898', cursor: 'pointer', fontSize: 16, lineHeight: 1, flexShrink: 0 }}>
+        <button onClick={onDelete} title="Delete" style={{ display: 'inline-flex', padding: '0 2px', border: 'none', background: 'transparent', color: '#555', cursor: 'pointer', fontSize: 16, lineHeight: 1, flexShrink: 0 }}>
           ×
         </button>
       </div>
@@ -370,7 +370,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
           ref={tagBtnRef}
           onClick={() => onOpenTagPicker(tagBtnRef.current!, item)}
           title="Tags"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: tagCount > 0 ? '#7a8c5c' : '#c0b8aa', border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', borderRadius: 6, fontFamily: 'inherit' }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: tagCount > 0 ? '#7a8c5c' : '#555', border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', borderRadius: 6, fontFamily: 'inherit' }}
         >
           <Tag size={13} />
           {tagCount > 0 && <span style={{ fontWeight: 500 }}>{tagCount}</span>}
@@ -378,7 +378,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
         <button
           onClick={() => setShowNotes((v) => !v)}
           title="Comments"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: noteCount > 0 ? '#4a7aaa' : '#c0b8aa', border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', borderRadius: 6, fontFamily: 'inherit' }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: noteCount > 0 ? '#4a7aaa' : '#555', border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', borderRadius: 6, fontFamily: 'inherit' }}
         >
           <MessageSquare size={13} />
           {noteCount > 0 && <span style={{ fontWeight: 500 }}>{noteCount}</span>}
@@ -395,7 +395,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
             transition={{ duration: 0.18 }}
             style={{ overflow: 'hidden' }}
           >
-            <div style={{ paddingLeft: 22, paddingTop: 6, borderTop: '1px solid #f0ebe0' }}>
+            <div style={{ paddingLeft: 22, paddingTop: 6, borderTop: '1px solid #2a2a2a' }}>
               {/* Tree nodes */}
               {noteCount > 0 && (
                 <div style={{ marginBottom: 8 }}>
@@ -403,16 +403,16 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
                     <div key={note.id}>
                       {/* Inter-node connector — only between items */}
                       {idx > 0 && (
-                        <div style={{ marginLeft: 5, width: 1, height: 10, background: '#ddd5c2' }} />
+                        <div style={{ marginLeft: 5, width: 1, height: 10, background: '#333' }} />
                       )}
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                         {/* Node dot */}
-                        <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#fff', border: '2px solid #c8bfb0', flexShrink: 0, marginTop: 3 }} />
+                        <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#111', border: '2px solid #444', flexShrink: 0, marginTop: 3 }} />
                         <div style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
-                          <p style={{ fontSize: 11, color: '#4a3a2e', lineHeight: 1.45, margin: 0, wordBreak: 'break-word' }}>{note.text}</p>
-                          <span style={{ fontSize: 9, color: '#b0a090', marginTop: 2, display: 'block', letterSpacing: '0.01em' }}>{formatTs(note.ts)}</span>
+                          <p style={{ fontSize: 11, color: '#ccc', lineHeight: 1.45, margin: 0, wordBreak: 'break-word' }}>{note.text}</p>
+                          <span style={{ fontSize: 9, color: '#555', marginTop: 2, display: 'block', letterSpacing: '0.01em' }}>{formatTs(note.ts)}</span>
                         </div>
-                        <button onClick={() => onDeleteNote(note.id)} title="Delete comment" style={{ border: 'none', background: 'transparent', color: '#c8b8a8', cursor: 'pointer', fontSize: 14, lineHeight: 1, flexShrink: 0, padding: '2px 0 0' }}>×</button>
+                        <button onClick={() => onDeleteNote(note.id)} title="Delete comment" style={{ border: 'none', background: 'transparent', color: '#444', cursor: 'pointer', fontSize: 14, lineHeight: 1, flexShrink: 0, padding: '2px 0 0' }}>×</button>
                       </div>
                     </div>
                   ))}
@@ -426,7 +426,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
                   onKeyDown={(e) => { if (e.key === 'Enter') commitNote(); if (e.key === 'Escape') setShowNotes(false) }}
                   placeholder="Write a comment…"
                   autoFocus
-                  style={{ flex: 1, fontSize: 11, border: '1px solid #ddd5c2', borderRadius: 6, padding: '4px 7px', outline: 'none', fontFamily: 'inherit', color: '#3a3228', background: '#faf8f3' }}
+                  style={{ flex: 1, fontSize: 11, border: '1px solid #333', borderRadius: 6, padding: '4px 7px', outline: 'none', fontFamily: 'inherit', color: '#e5e5e5', background: '#0a0a0a' }}
                 />
                 {noteText.trim() && (
                   <button onClick={commitNote} style={{ padding: '3px 8px', border: '1px solid #7a8c5c', borderRadius: 6, background: '#7a8c5c', fontSize: 10, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>

@@ -1,16 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  FolderKanban,
+  Settings,
+  CreditCard,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 
 const navItems = [
-  { label: "Projects", href: "/dashboard" },
-  { label: "Settings", href: "/dashboard/settings" },
-  { label: "Billing", href: "/dashboard/billing" },
+  { label: "Projects", href: "/dashboard", icon: FolderKanban },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
 ];
 
 export default function DashboardLayout({
@@ -21,6 +28,13 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, isPending } = useSession();
+
+  const isProjectPage = pathname.startsWith("/dashboard/projects/");
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(isProjectPage);
+  }, [isProjectPage]);
 
   useEffect(() => {
     if (isPending) return;
@@ -35,56 +49,87 @@ export default function DashboardLayout({
 
   if (isPending) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <p className="text-neutral-500 text-sm">Loading...</p>
+      <div className="dark">
+        <div className="flex min-h-screen items-center justify-center bg-neutral-950">
+          <p className="text-neutral-500 text-sm font-mono">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <aside className="w-60 shrink-0 border-r border-neutral-200 p-6 flex flex-col">
-        <Link href="/dashboard" className="block mb-8">
-          <span className="text-lg font-semibold text-neutral-900">
-            Retrack
-          </span>
-        </Link>
+    <div className="dark">
+      <div className="flex min-h-screen bg-neutral-900">
+        <aside
+          className={`${
+            collapsed ? "w-14" : "w-60"
+          } shrink-0 bg-neutral-950 border-r border-neutral-800 flex flex-col transition-all duration-200 overflow-hidden`}
+        >
+          <div className="flex items-center justify-between p-4">
+            <Link href="/dashboard" className="block">
+              <span className="text-lg font-semibold text-neutral-100 font-mono">
+                {collapsed ? "R" : "Retrack"}
+              </span>
+            </Link>
+            <button
+              onClick={() => setCollapsed((v) => !v)}
+              className="text-neutral-500 hover:text-neutral-300 transition-colors"
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? (
+                <PanelLeftOpen size={16} />
+              ) : (
+                <PanelLeftClose size={16} />
+              )}
+            </button>
+          </div>
 
-        <nav className="flex-1">
-          <ul className="space-y-1">
-            {navItems.map((item) => {
-              const isActive =
-                item.href === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname.startsWith(item.href);
+          <nav className="flex-1 px-2">
+            <ul className="space-y-1">
+              {navItems.map((item) => {
+                const isActive =
+                  item.href === "/dashboard"
+                    ? pathname === "/dashboard"
+                    : pathname.startsWith(item.href);
+                const Icon = item.icon;
 
-              return (
-                <li key={item.href}>
-                  <Button
-                    variant="ghost"
-                    className={`w-full justify-start ${
-                      isActive
-                        ? "bg-neutral-100 text-neutral-900"
-                        : "text-neutral-600"
-                    }`}
-                    render={<Link href={item.href} />}
-                  >
-                    {item.label}
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+                return (
+                  <li key={item.href}>
+                    <Button
+                      variant="ghost"
+                      className={`w-full ${
+                        collapsed ? "justify-center px-2" : "justify-start"
+                      } ${
+                        isActive
+                          ? "bg-neutral-800 text-neutral-100"
+                          : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
+                      }`}
+                      render={<Link href={item.href} />}
+                    >
+                      <Icon size={16} className="shrink-0" />
+                      {!collapsed && (
+                        <span className="ml-2 text-sm">{item.label}</span>
+                      )}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
 
-        <Separator className="my-4" />
+          <Separator className="my-2 bg-neutral-800" />
 
-        <p className="text-xs text-neutral-400 px-3">
-          {session?.user?.email}
-        </p>
-      </aside>
+          {!collapsed && (
+            <p className="text-xs text-neutral-500 px-4 pb-4 truncate font-mono">
+              {session?.user?.email}
+            </p>
+          )}
+        </aside>
 
-      <main className="flex-1 p-8">{children}</main>
+        <main className="flex-1 p-4 bg-neutral-900 overflow-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
