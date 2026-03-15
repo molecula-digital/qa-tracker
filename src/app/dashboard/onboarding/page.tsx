@@ -2,16 +2,29 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { signUp } from "@/lib/auth-client";
+import { organization } from "@/lib/auth-client";
 
-export default function SignUpPage() {
+function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export default function OnboardingPage() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [slug, setSlug] = useState("");
+  const [slugEdited, setSlugEdited] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  function handleNameChange(value: string) {
+    setName(value);
+    if (!slugEdited) {
+      setSlug(toSlug(value));
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,14 +32,15 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const result = await signUp.email({
+      const result = await organization.create({
         name,
-        email,
-        password,
+        slug,
       });
 
       if (result.error) {
-        setError(result.error.message ?? "Sign up failed. Please try again.");
+        setError(
+          result.error.message ?? "Failed to create organization. Please try again."
+        );
       } else {
         router.push("/dashboard");
       }
@@ -38,12 +52,12 @@ export default function SignUpPage() {
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-md pt-16">
       <h1 className="text-2xl font-semibold text-neutral-900 mb-1">
-        Create your account
+        Create your organization
       </h1>
       <p className="text-neutral-500 mb-8">
-        Get started with Retrack for free.
+        Set up your team to start tracking releases.
       </p>
 
       {error && (
@@ -55,57 +69,44 @@ export default function SignUpPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label
-            htmlFor="name"
+            htmlFor="org-name"
             className="block text-sm font-medium text-neutral-700 mb-1"
           >
-            Name
+            Organization name
           </label>
           <input
-            id="name"
+            id="org-name"
             type="text"
             required
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => handleNameChange(e.target.value)}
             className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 placeholder-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-            placeholder="Your name"
+            placeholder="Acme Inc."
           />
         </div>
 
         <div>
           <label
-            htmlFor="email"
+            htmlFor="org-slug"
             className="block text-sm font-medium text-neutral-700 mb-1"
           >
-            Email
+            Slug
           </label>
           <input
-            id="email"
-            type="email"
+            id="org-slug"
+            type="text"
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={slug}
+            onChange={(e) => {
+              setSlug(e.target.value);
+              setSlugEdited(true);
+            }}
             className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 placeholder-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-            placeholder="you@example.com"
+            placeholder="acme-inc"
           />
-        </div>
-
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-neutral-700 mb-1"
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 placeholder-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-            placeholder="Min. 8 characters"
-          />
+          <p className="mt-1 text-xs text-neutral-400">
+            Used in URLs. Lowercase letters, numbers, and hyphens only.
+          </p>
         </div>
 
         <button
@@ -113,19 +114,9 @@ export default function SignUpPage() {
           disabled={loading}
           className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Creating account..." : "Create account"}
+          {loading ? "Creating..." : "Create organization"}
         </button>
       </form>
-
-      <p className="mt-6 text-center text-sm text-neutral-500">
-        Already have an account?{" "}
-        <Link
-          href="/sign-in"
-          className="font-medium text-neutral-900 hover:underline"
-        >
-          Sign in
-        </Link>
-      </p>
     </div>
   );
 }
