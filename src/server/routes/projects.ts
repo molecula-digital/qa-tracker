@@ -7,6 +7,7 @@ import { eq, and, sql, gte } from "drizzle-orm";
 import { requireOrg, type OrgEnv } from "@/server/middleware/org";
 import { canCreateProject } from "@/server/lib/plan-limits";
 import { sseManager } from "@/server/lib/sse-manager";
+import { slugify, slugifyWithSuffix } from "@/lib/slugify";
 
 const projects = new Hono<OrgEnv>();
 
@@ -118,12 +119,29 @@ projects.post(
 
     const id = crypto.randomUUID();
     const now = new Date();
+
+    // Generate slug from name with collision retry
+    let slug = slugify(body.name);
+    let slugAvailable = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const [existing] = await db
+        .select({ id: project.id })
+        .from(project)
+        .where(and(eq(project.organizationId, orgId), eq(project.slug, slug)));
+      if (!existing) { slugAvailable = true; break; }
+      slug = slugifyWithSuffix(body.name);
+    }
+    if (!slugAvailable) {
+      return c.json({ error: "Could not generate unique slug" }, 409);
+    }
+
     const [row] = await db
       .insert(project)
       .values({
         id,
         name: body.name,
         description: body.description ?? null,
+        slug,
         organizationId: orgId,
         createdBy: user.id,
         createdAt: now,
@@ -143,12 +161,35 @@ projects.put(
     z.object({
       name: z.string().min(1).max(100).optional(),
       description: z.string().max(500).optional(),
+      isPublic: z.boolean().optional(),
+      slug: z
+        .string()
+        .min(1)
+        .max(60)
+        .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/, "Invalid slug format")
+        .optional(),
     })
   ),
   async (c) => {
     const orgId = c.get("organizationId");
     const id = c.req.param("id");
     const body = c.req.valid("json");
+
+    // Check slug uniqueness if slug is being changed
+    if (body.slug) {
+      const [existing] = await db
+        .select({ id: project.id })
+        .from(project)
+        .where(
+          and(
+            eq(project.organizationId, orgId),
+            eq(project.slug, body.slug),
+          )
+        );
+      if (existing && existing.id !== id) {
+        return c.json({ error: "Slug already in use" }, 409);
+      }
+    }
 
     const [row] = await db
       .update(project)
