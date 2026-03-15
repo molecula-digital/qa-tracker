@@ -1,21 +1,23 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag, MessageSquare, ClipboardList, CheckCircle2, Trash2, Plus } from 'lucide-react'
+import { Tag, MessageSquare, ClipboardList, CheckCircle2, Trash2, Plus, Sparkles, Palette, MoreHorizontal } from 'lucide-react'
 import type { Section, Item, TagKey, Note } from '../types/tracker'
-import { SECTION_ICONS, type SectionIconKey } from './SectionIcons'
-import { SectionColorPicker } from './SectionColorPicker'
-import { SectionIconPicker } from './SectionIconPicker'
-import { SectionMenu } from './SectionMenu'
+import { SECTION_ICONS, ICON_GROUPS, type SectionIconKey } from './SectionIcons'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-
-function darkenColor(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgb(${Math.round(r * 0.35)}, ${Math.round(g * 0.35)}, ${Math.round(b * 0.35)})`
-}
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 function getHeaderColor(hex: string | undefined, isDark: boolean): string {
   if (!hex) return 'var(--kanban-header)'
@@ -34,6 +36,19 @@ const TAG_COLORS: Record<TagKey, string> = {
   later: '#4a8ae0',
 }
 
+const SECTION_COLORS = [
+  { label: 'Default',   value: '',        lightBg: '#e8e4dd', darkBg: '#333' },
+  { label: 'Sage',      value: '#e8f0de', lightBg: '#e8f0de', darkBg: '#3a4a2e' },
+  { label: 'Sky',       value: '#deeaf5', lightBg: '#deeaf5', darkBg: '#2a3a4a' },
+  { label: 'Blush',     value: '#f5e4e4', lightBg: '#f5e4e4', darkBg: '#4a2a2a' },
+  { label: 'Lavender',  value: '#ece8f5', lightBg: '#ece8f5', darkBg: '#3a2a4a' },
+  { label: 'Peach',     value: '#f5ede0', lightBg: '#f5ede0', darkBg: '#4a3a2a' },
+  { label: 'Mint',      value: '#dff5ef', lightBg: '#dff5ef', darkBg: '#2a4a3a' },
+  { label: 'Lemon',     value: '#f5f2d0', lightBg: '#f5f2d0', darkBg: '#4a4a2a' },
+  { label: 'Slate',     value: '#e2e8f0', lightBg: '#e2e8f0', darkBg: '#2a2e38' },
+  { label: 'Rose',      value: '#fce7f3', lightBg: '#fce7f3', darkBg: '#4a2a3a' },
+]
+
 // ─── Board ────────────────────────────────────────────────────────────────────
 
 interface KanbanBoardProps {
@@ -51,13 +66,14 @@ interface KanbanBoardProps {
   onIconChange: (sectionId: string, icon: string) => void
   onReorder: (fromIndex: number, toIndex: number) => void
   onOpenTagPicker: (anchorEl: HTMLButtonElement, item: Item, sectionId: string) => void
+  onAddSection?: () => void
 }
 
 export function KanbanBoard({
   sections, search, newestSectionId,
   onToggleItem, onAddItem, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateSectionTitle, onColorChange, onIconChange,
-  onReorder, onOpenTagPicker,
+  onReorder, onOpenTagPicker, onAddSection,
 }: KanbanBoardProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dropIndex, setDropIndex] = useState<number | null>(null)
@@ -72,7 +88,7 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="flex gap-3 overflow-x-auto items-start pb-6 pt-1 h-full">
+    <div className="flex gap-3 overflow-x-auto items-stretch pb-6 pt-1 h-full">
       <AnimatePresence initial={false}>
         {sections.map((section, i) => (
           <motion.div
@@ -82,7 +98,7 @@ export function KanbanBoard({
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.88, x: -24 }}
             transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-            className="shrink-0"
+            className="shrink-0 flex"
           >
             <KanbanColumn
               section={section}
@@ -112,6 +128,29 @@ export function KanbanBoard({
           </motion.div>
         ))}
       </AnimatePresence>
+
+      {/* Add section placeholder */}
+      <div
+        className={`w-[300px] shrink-0 flex items-center justify-center rounded-[14px] border-2 border-dashed transition-colors cursor-pointer group/add ${
+          isDraggingAny
+            ? 'border-emerald-600/40 bg-emerald-500/5 min-h-full'
+            : 'border-border/40 hover:border-border hover:bg-muted/30 min-h-[120px]'
+        }`}
+        onClick={onAddSection}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault()
+          // If dragging to the end, reorder to last position
+          if (dragIndex !== null) {
+            handleDrop(sections.length)
+          }
+        }}
+      >
+        <div className="flex flex-col items-center gap-2 text-muted-foreground/50 group-hover/add:text-muted-foreground transition-colors">
+          <Plus size={20} strokeWidth={1.5} />
+          <span className="text-xs font-medium">New section</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -152,10 +191,9 @@ function KanbanColumn({
   onOpenTagPicker,
 }: KanbanColumnProps) {
   const [addInputVal, setAddInputVal] = useState('')
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [activePicker, setActivePicker] = useState<'color' | 'icon' | null>(null)
-  const menuBtnRef = useRef<HTMLButtonElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [colorPickerOpen, setColorPickerOpen] = useState(false)
+  const [iconPickerOpen, setIconPickerOpen] = useState(false)
+  const [iconGroup, setIconGroup] = useState(0)
   const titleRef = useRef<HTMLInputElement>(null)
   const addInputRef = useRef<HTMLInputElement>(null)
   const lastSortedOrder = useRef<string[]>([])
@@ -247,19 +285,32 @@ function KanbanColumn({
         }`}>
           {done}/{total}
         </span>
-        <Button
-          ref={menuBtnRef}
-          variant="ghost"
-          size="sm"
-          title="Section options"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v) }}
-          className="w-6 h-5 p-0 text-muted-foreground hover:text-foreground shrink-0 text-[15px] tracking-wider"
-        >
-          ···
-        </Button>
-      </motion.div>
 
+        {/* ··· Menu — proper DropdownMenu anchored here */}
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            onMouseDown={(e) => e.stopPropagation()}
+            className="inline-flex items-center justify-center w-6 h-5 rounded text-muted-foreground hover:text-foreground shrink-0 text-[15px] tracking-wider outline-none"
+          >
+            <MoreHorizontal size={14} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={() => setColorPickerOpen(true)} className="gap-2">
+              <Palette size={14} />
+              Color
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setIconPickerOpen(true)} className="gap-2">
+              {SectionIcon ? <SectionIcon size={14} /> : <Sparkles size={14} />}
+              Icon
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDeleteSection} className="gap-2 text-red-400 focus:text-red-300">
+              <Trash2 size={14} />
+              Delete section
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </motion.div>
 
       {/* Cards list */}
       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-0">
@@ -323,21 +374,86 @@ function KanbanColumn({
         </div>
       </div>
 
-      {/* Column menus */}
-      {menuOpen && (
-        <SectionMenu ref={menuRef} anchorEl={menuBtnRef.current!} sectionColor={section.color} SectionIcon={SectionIcon}
-          onColor={() => { setMenuOpen(false); setActivePicker('color') }}
-          onIcon={() => { setMenuOpen(false); setActivePicker('icon') }}
-          onDelete={() => { setMenuOpen(false); onDeleteSection() }}
-          onClose={() => setMenuOpen(false)}
-        />
-      )}
-      {activePicker === 'color' && menuBtnRef.current && (
-        <SectionColorPicker currentColor={section.color} anchorEl={menuBtnRef.current} onSelect={onColorChange} onClose={() => setActivePicker(null)} />
-      )}
-      {activePicker === 'icon' && menuBtnRef.current && (
-        <SectionIconPicker currentIcon={section.icon} anchorEl={menuBtnRef.current} onSelect={onIconChange} onClose={() => setActivePicker(null)} />
-      )}
+      {/* Color picker popover */}
+      <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
+        <PopoverTrigger className="sr-only">Color</PopoverTrigger>
+        <PopoverContent className="w-auto p-3" align="end">
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">
+            Section color
+          </p>
+          <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+            {SECTION_COLORS.map((c) => {
+              const active = (section.color ?? '') === c.value
+              const bg = isDark ? c.darkBg : c.lightBg
+              return (
+                <button
+                  key={c.value || 'default'}
+                  title={c.label}
+                  onClick={() => { onColorChange(c.value); setColorPickerOpen(false) }}
+                  className="w-7 h-7 rounded-lg transition-transform hover:scale-110"
+                  style={{
+                    background: bg,
+                    border: active ? '2px solid var(--foreground)' : '1px solid var(--border)',
+                    boxShadow: active ? '0 0 0 2px var(--ring)' : 'none',
+                  }}
+                />
+              )
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Icon picker popover */}
+      <Popover open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
+        <PopoverTrigger className="sr-only">Icon</PopoverTrigger>
+        <PopoverContent className="w-[248px] p-3" align="end">
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">
+            Section icon
+          </p>
+          <div className="flex gap-1 mb-2.5">
+            {ICON_GROUPS.map((g, i) => (
+              <Button
+                key={g.label}
+                variant={iconGroup === i ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIconGroup(i)}
+                className="flex-1 h-6 text-[11px] px-1"
+              >
+                {g.label}
+              </Button>
+            ))}
+            <Button
+              variant={!section.icon ? "default" : "outline"}
+              size="sm"
+              onClick={() => { onIconChange(''); setIconPickerOpen(false) }}
+              className="h-6 text-[11px] px-2"
+            >
+              None
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {ICON_GROUPS[iconGroup].keys.map((key) => {
+              const IconComp = SECTION_ICONS[key as SectionIconKey]
+              const active = section.icon === key
+              return (
+                <Button
+                  key={key}
+                  variant="ghost"
+                  title={key}
+                  onClick={() => { onIconChange(key); setIconPickerOpen(false) }}
+                  className={`w-8 h-8 p-0 ${
+                    active
+                      ? 'bg-accent text-foreground border border-border'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <IconComp size={15} />
+                </Button>
+              )
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   )
 }
@@ -367,7 +483,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
   const handleDelete = () => {
     if (!confirmDelete) {
       setConfirmDelete(true)
-      setTimeout(() => setConfirmDelete(false), 3000) // auto-cancel after 3s
+      setTimeout(() => setConfirmDelete(false), 3000)
       return
     }
     onDelete()
@@ -436,7 +552,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
         </div>
       )}
 
-      {/* Footer actions — visible on hover or when active */}
+      {/* Footer actions */}
       <div className={`flex items-center gap-0.5 pl-6 ${
         (tagCount > 0 || noteCount > 0) ? '' : 'opacity-0 group-hover/card:opacity-100 transition-opacity'
       }`}>

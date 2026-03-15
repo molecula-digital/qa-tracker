@@ -618,6 +618,7 @@ export default function ProjectPage({
                 onIconChange={handleIconChange}
                 onReorder={handleReorder}
                 onOpenTagPicker={handleOpenTagPicker}
+                onAddSection={handleAddSection}
               />
             </div>
           )}
