@@ -6,6 +6,18 @@ type SSEConnection = {
   clientId: string;
 };
 
+export type SSEPatch =
+  | { action: "section:create"; data: { id: string; title: string; open: boolean; color?: string; icon?: string } }
+  | { action: "section:update"; sectionId: string; data: Record<string, unknown> }
+  | { action: "section:delete"; sectionId: string }
+  | { action: "section:reorder"; sectionIds: string[] }
+  | { action: "item:create"; sectionId: string; data: { id: string; text: string; checked: boolean; tags: string[]; notes: never[] } }
+  | { action: "item:update"; sectionId: string; itemId: string; data: Record<string, unknown> }
+  | { action: "item:delete"; sectionId: string; itemId: string }
+  | { action: "item:tags"; sectionId: string; itemId: string; tags: string[] }
+  | { action: "note:create"; sectionId: string; itemId: string; data: { id: string; text: string; ts: number } }
+  | { action: "note:delete"; sectionId: string; itemId: string; noteId: string };
+
 class SSEManager {
   private connections = new Map<string, Set<SSEConnection>>();
 
@@ -33,12 +45,19 @@ class SSEManager {
   }
 
   broadcast(projectId: string, event: { type: string; entity: string }) {
+    this._send(projectId, "invalidate", event);
+  }
+
+  broadcastPatch(projectId: string, patch: SSEPatch) {
+    this._send(projectId, "patch", patch);
+  }
+
+  private _send(projectId: string, eventName: string, payload: unknown) {
     const conns = this.connections.get(projectId);
     if (!conns) return;
 
-    // Auto-exclude the requesting client to prevent double-invalidation
     const excludeClientId = getRequestSSEClientId();
-    const data = `event: invalidate\ndata: ${JSON.stringify(event)}\n\n`;
+    const data = `event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`;
     const encoder = new TextEncoder();
 
     for (const conn of conns) {

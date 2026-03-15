@@ -57,7 +57,15 @@ export async function createNote(
 
   const projectId = await getProjectIdFromItem(data.itemId);
   if (projectId) {
-    sseManager.broadcast(projectId, { type: "invalidate", entity: "notes" });
+    const sectionId = (await db.select({ sectionId: item.sectionId }).from(item).where(eq(item.id, data.itemId)))[0]?.sectionId;
+    if (sectionId) {
+      sseManager.broadcastPatch(projectId, {
+        action: "note:create",
+        sectionId,
+        itemId: data.itemId,
+        data: { id, text: data.text, ts: row.createdAt.getTime() },
+      });
+    }
     logActivity({
       projectId,
       actorId: userId,
@@ -87,7 +95,15 @@ export async function deleteNote(
 
   const projectId = await getProjectIdFromItem(existing.itemId);
   if (projectId) {
-    sseManager.broadcast(projectId, { type: "invalidate", entity: "notes" });
+    const sectionId = (await db.select({ sectionId: item.sectionId }).from(item).where(eq(item.id, existing.itemId)))[0]?.sectionId;
+    if (sectionId) {
+      sseManager.broadcastPatch(projectId, {
+        action: "note:delete",
+        sectionId,
+        itemId: existing.itemId,
+        noteId,
+      });
+    }
     logActivity({
       projectId,
       actorId: userId,

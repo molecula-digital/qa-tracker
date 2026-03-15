@@ -73,7 +73,11 @@ export async function createItem(
 
   const projectId = await getProjectId(data.sectionId);
   if (projectId) {
-    sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+    sseManager.broadcastPatch(projectId, {
+      action: "item:create",
+      sectionId: data.sectionId,
+      data: { id, text: data.text, checked: false, tags: [], notes: [] as never[] },
+    });
     logActivity({
       projectId,
       actorId: userId,
@@ -112,7 +116,12 @@ export async function updateItem(
 
   const projectId = await getProjectId(row.sectionId);
   if (projectId) {
-    sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+    sseManager.broadcastPatch(projectId, {
+      action: "item:update",
+      sectionId: existing.sectionId,
+      itemId,
+      data: { text: row.text, checked: row.checked },
+    });
     const action =
       data.checked !== undefined
         ? data.checked
@@ -153,7 +162,11 @@ export async function deleteItem(
 
   const projectId = await getProjectId(existing.sectionId);
   if (projectId) {
-    sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+    sseManager.broadcastPatch(projectId, {
+      action: "item:delete",
+      sectionId: existing.sectionId,
+      itemId,
+    });
     logActivity({
       projectId,
       actorId: userId,
@@ -193,7 +206,12 @@ export async function setItemTags(
 
   const projectId = await getProjectId(existing.sectionId);
   if (projectId) {
-    sseManager.broadcast(projectId, { type: "invalidate", entity: "items" });
+    sseManager.broadcastPatch(projectId, {
+      action: "item:tags",
+      sectionId: existing.sectionId,
+      itemId,
+      tags,
+    });
     logActivity({
       projectId,
       actorId: userId,

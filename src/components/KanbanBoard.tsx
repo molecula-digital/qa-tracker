@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag, MessageSquare, ClipboardList, CheckCircle2, Trash2, Plus, Sparkles, Palette, MoreHorizontal } from 'lucide-react'
+import { Tag, MessageSquare, ClipboardList, CheckCircle2, Trash2, Plus, Sparkles, Palette, MoreHorizontal, ChevronsDown } from 'lucide-react'
 import type { Section, Item, TagKey, Note } from '../types/tracker'
 import { SECTION_ICONS, ICON_GROUPS, type SectionIconKey } from './SectionIcons'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -191,9 +191,17 @@ function KanbanColumn({
 }: KanbanColumnProps) {
   const [addInputVal, setAddInputVal] = useState('')
   const [iconGroup, setIconGroup] = useState(0)
+  const [hasOverflowBelow, setHasOverflowBelow] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
   const addInputRef = useRef<HTMLInputElement>(null)
+  const cardsRef = useRef<HTMLDivElement>(null)
   const lastSortedOrder = useRef<string[]>([])
+
+  const checkOverflow = useCallback(() => {
+    const el = cardsRef.current
+    if (!el) return
+    setHasOverflowBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 8)
+  }, [])
 
   const SectionIcon = section.icon ? SECTION_ICONS[section.icon as SectionIconKey] : null
   const filtered = (() => {
@@ -215,6 +223,15 @@ function KanbanColumn({
   const done = section.items.filter((i) => i.checked).length
   const total = section.items.length
   const allDone = total > 0 && done === total
+
+  useEffect(() => {
+    const el = cardsRef.current
+    if (!el) return
+    checkOverflow()
+    const obs = new ResizeObserver(checkOverflow)
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [checkOverflow, filtered.length])
 
   useEffect(() => {
     if (isNew && titleRef.current) {
@@ -395,46 +412,69 @@ function KanbanColumn({
       </motion.div>
 
       {/* Cards list */}
-      <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-0">
-        <AnimatePresence initial={false}>
-          {filtered.map((item) => (
-            <motion.div
-              key={item.id}
-              layout
-              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginBottom: 6 }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0, scale: 0.95 }}
-              transition={{ duration: 0.18, ease: 'easeInOut' }}
-              className="overflow-hidden"
-            >
-              <KanbanCard
-                item={item}
-                onToggle={() => onToggleItem(item.id)}
-                onDelete={() => onDeleteItem(item.id)}
-                onAddNote={(text) => onAddNote(item.id, text)}
-                onDeleteNote={(noteId) => onDeleteNote(item.id, noteId)}
-                onOpenTagPicker={onOpenTagPicker}
-                readOnly={readOnly}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {filtered.length === 0 && (
-          <div className="flex flex-col items-center gap-2 py-6 px-3 text-muted-foreground">
-            <ClipboardList size={28} strokeWidth={1.4} />
-            <span className="text-xs">{search ? 'No matches' : 'No items yet'}</span>
-            {!search && !readOnly && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addInputRef.current?.focus()}
-                className="h-7 text-[11px] border-dashed border-border text-muted-foreground"
+      <div className="relative flex-1 min-h-0">
+        <div
+          ref={cardsRef}
+          onScroll={checkOverflow}
+          className="overflow-y-auto p-2 flex flex-col gap-0 h-full"
+        >
+          <AnimatePresence initial={false}>
+            {filtered.map((item) => (
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginBottom: 6 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0, scale: 0.95 }}
+                transition={{ duration: 0.18, ease: 'easeInOut' }}
+                className="overflow-hidden"
               >
-                + Add first item
-              </Button>
-            )}
-          </div>
-        )}
+                <KanbanCard
+                  item={item}
+                  onToggle={() => onToggleItem(item.id)}
+                  onDelete={() => onDeleteItem(item.id)}
+                  onAddNote={(text) => onAddNote(item.id, text)}
+                  onDeleteNote={(noteId) => onDeleteNote(item.id, noteId)}
+                  onOpenTagPicker={onOpenTagPicker}
+                  readOnly={readOnly}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {filtered.length === 0 && (
+            <div className="flex flex-col items-center gap-2 py-6 px-3 text-muted-foreground">
+              <ClipboardList size={28} strokeWidth={1.4} />
+              <span className="text-xs">{search ? 'No matches' : 'No items yet'}</span>
+              {!search && !readOnly && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addInputRef.current?.focus()}
+                  className="h-7 text-[11px] border-dashed border-border text-muted-foreground"
+                >
+                  + Add first item
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Scroll-to-bottom indicator */}
+        <AnimatePresence>
+          {hasOverflowBelow && (
+            <motion.button
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => cardsRef.current?.scrollTo({ top: cardsRef.current.scrollHeight, behavior: 'smooth' })}
+              className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-foreground/90 text-background text-[10px] font-medium shadow-lg backdrop-blur-sm hover:bg-foreground transition-colors cursor-pointer z-10"
+            >
+              <ChevronsDown size={12} />
+              More items
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Add item */}

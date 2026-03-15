@@ -85,7 +85,10 @@ export async function createSection(
     })
     .returning();
 
-  sseManager.broadcast(data.projectId, { type: "invalidate", entity: "sections" });
+  sseManager.broadcastPatch(data.projectId, {
+    action: "section:create",
+    data: { id, title: data.title, open: true, color: data.color, icon: data.icon },
+  });
   logActivity({
     projectId: data.projectId,
     actorId: userId,
@@ -119,7 +122,11 @@ export async function updateSection(
     .where(eq(section.id, sectionId))
     .returning();
 
-  sseManager.broadcast(row.projectId, { type: "invalidate", entity: "sections" });
+  sseManager.broadcastPatch(row.projectId, {
+    action: "section:update",
+    sectionId: sectionId,
+    data: { title: row.title, color: row.color ?? undefined, icon: row.icon ?? undefined, open: row.open },
+  });
   const changes = [data.title && "title", data.color !== undefined && "color", data.icon !== undefined && "icon", data.order !== undefined && "order"].filter(Boolean).join(", ");
   logActivity({
     projectId: row.projectId,
@@ -151,7 +158,10 @@ export async function reorderSections(
     }
   });
 
-  sseManager.broadcast(projectId, { type: "invalidate", entity: "sections" });
+  sseManager.broadcastPatch(projectId, {
+    action: "section:reorder",
+    sectionIds,
+  });
   return { success: true };
 }
 
@@ -186,7 +196,10 @@ export async function deleteSection(
       .where(eq(section.id, remaining[i].id));
   }
 
-  sseManager.broadcast(projectId, { type: "invalidate", entity: "sections" });
+  sseManager.broadcastPatch(projectId, {
+    action: "section:delete",
+    sectionId,
+  });
   logActivity({
     projectId: existing.section.projectId,
     actorId: userId,
