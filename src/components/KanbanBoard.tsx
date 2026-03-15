@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Tag, MessageSquare, ClipboardList, CheckCircle2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import type { Section, Item, TagKey, Note } from '../types/tracker'
@@ -7,8 +6,8 @@ import { SECTION_ICONS, type SectionIconKey } from './SectionIcons'
 import { SectionColorPicker } from './SectionColorPicker'
 import { SectionIconPicker } from './SectionIconPicker'
 import { SectionMenu } from './SectionMenu'
-import { PlusIcon } from './Icons'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 function darkenColor(hex: string): string {
@@ -251,61 +250,63 @@ function KanbanColumn({
         <span style={{ fontSize: 11, borderRadius: 99, padding: '1px 7px', flexShrink: 0, whiteSpace: 'nowrap', background: allDone ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.1)', color: allDone ? '#4ade80' : '#e5e5e5' }}>
           {done}/{total}
         </span>
-        <button
+        <Button
           ref={menuBtnRef}
+          variant="ghost"
+          size="sm"
           title="Section options"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v) }}
-          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 22, borderRadius: 6, flexShrink: 0, border: 'none', background: 'transparent', cursor: 'pointer', color: '#888', fontSize: 15, letterSpacing: 1, lineHeight: 1 }}
+          className="w-6 h-5 p-0 text-neutral-500 hover:text-neutral-300 shrink-0 text-[15px] tracking-wider"
         >
           ···
-        </button>
+        </Button>
       </motion.div>
 
       {/* Reorder + section actions bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-        <div style={{ display: 'flex', gap: 2 }}>
-          <button
+        <div className="flex gap-0.5">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onMoveLeft}
             disabled={!onMoveLeft}
             title="Move left"
-            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, border: 'none', background: 'transparent', cursor: onMoveLeft ? 'pointer' : 'default', color: onMoveLeft ? '#888' : '#333', fontSize: 12 }}
+            className="w-6 h-6 p-0 text-neutral-500 hover:text-neutral-300 disabled:text-neutral-700 disabled:opacity-100"
           >
             <ChevronLeft size={14} />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onMoveRight}
             disabled={!onMoveRight}
             title="Move right"
-            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, border: 'none', background: 'transparent', cursor: onMoveRight ? 'pointer' : 'default', color: onMoveRight ? '#888' : '#333', fontSize: 12 }}
+            className="w-6 h-6 p-0 text-neutral-500 hover:text-neutral-300 disabled:text-neutral-700 disabled:opacity-100"
           >
             <ChevronRight size={14} />
-          </button>
+          </Button>
         </div>
         {confirmDeleteSection ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 10, color: '#f87171' }}>Delete {total} items?</span>
-            <button
-              onClick={handleDeleteSection}
-              style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, border: '1px solid #dc2626', background: '#dc2626', color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}
-            >
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-red-400">Delete {total} items?</span>
+            <Button variant="destructive" size="sm" onClick={handleDeleteSection} className="h-5 px-2 text-[10px]">
               Yes
-            </button>
-            <button
-              onClick={() => setConfirmDeleteSection(false)}
-              style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, border: '1px solid #444', background: 'transparent', color: '#888', cursor: 'pointer', fontFamily: 'inherit' }}
-            >
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setConfirmDeleteSection(false)} className="h-5 px-2 text-[10px]">
               No
-            </button>
+            </Button>
           </div>
         ) : (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleDeleteSection}
             title="Delete section"
-            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: '#555' }}
+            className="w-6 h-6 p-0 text-neutral-600 hover:text-red-400"
           >
             <Trash2 size={12} />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -338,12 +339,14 @@ function KanbanColumn({
             <ClipboardList size={28} strokeWidth={1.4} />
             <span style={{ fontSize: 12 }}>{search ? 'No matches' : 'No items yet'}</span>
             {!search && (
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => addInputRef.current?.focus()}
-                style={{ fontSize: 11, padding: '4px 12px', border: '1px dashed #444', borderRadius: 8, background: 'transparent', color: '#888', cursor: 'pointer', fontFamily: 'inherit' }}
+                className="h-7 text-[11px] border-dashed border-neutral-700 text-neutral-500"
               >
                 + Add first item
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -361,21 +364,21 @@ function KanbanColumn({
             style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 12, color: '#e5e5e5', outline: 'none', fontFamily: 'inherit', padding: '2px 0' }}
           />
           {addInputVal.trim() && (
-            <button onClick={commitAdd} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '3px 8px', border: '1px solid #7a8c5c', borderRadius: 6, background: '#7a8c5c', fontSize: 11, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
-              <PlusIcon /> Add
-            </button>
+            <Button onClick={commitAdd} size="sm" className="h-6 px-2 text-[11px] gap-1 bg-emerald-700 hover:bg-emerald-600 text-white shrink-0">
+              Add
+            </Button>
           )}
         </div>
       </div>
 
-      {/* Column portals */}
-      {menuOpen && menuBtnRef.current && createPortal(
-        <SectionMenu ref={menuRef} anchorEl={menuBtnRef.current} sectionColor={section.color} SectionIcon={SectionIcon}
+      {/* Column menus */}
+      {menuOpen && (
+        <SectionMenu ref={menuRef} anchorEl={menuBtnRef.current!} sectionColor={section.color} SectionIcon={SectionIcon}
           onColor={() => { setMenuOpen(false); setActivePicker('color') }}
           onIcon={() => { setMenuOpen(false); setActivePicker('icon') }}
           onDelete={() => { setMenuOpen(false); handleDeleteSection() }}
           onClose={() => setMenuOpen(false)}
-        />, document.body,
+        />
       )}
       {activePicker === 'color' && menuBtnRef.current && (
         <SectionColorPicker currentColor={section.color} anchorEl={menuBtnRef.current} onSelect={onColorChange} onClose={() => setActivePicker(null)} />
@@ -441,21 +444,25 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
           {item.text}
         </span>
         {confirmDelete ? (
-          <button
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={handleDelete}
             title="Confirm delete"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 2, padding: '1px 6px', border: '1px solid #dc2626', borderRadius: 4, background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: 10, lineHeight: 1, flexShrink: 0, fontFamily: 'inherit' }}
+            className="h-5 px-1.5 text-[10px] gap-1 shrink-0"
           >
             <Trash2 size={10} /> Delete?
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleDelete}
             title="Delete item"
-            style={{ display: 'inline-flex', padding: '2px', border: 'none', background: 'transparent', color: '#444', cursor: 'pointer', lineHeight: 1, flexShrink: 0, borderRadius: 4 }}
+            className="w-5 h-5 p-0 text-neutral-600 hover:text-red-400 shrink-0"
           >
             <Trash2 size={12} />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -472,24 +479,28 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
       )}
 
       {/* Footer actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, paddingLeft: 20 }}>
-        <button
+      <div className="flex items-center gap-0.5 pl-5">
+        <Button
           ref={tagBtnRef}
+          variant="ghost"
+          size="sm"
           onClick={() => onOpenTagPicker(tagBtnRef.current!, item)}
           title="Tags"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: tagCount > 0 ? '#7a8c5c' : '#555', border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', borderRadius: 6, fontFamily: 'inherit' }}
+          className={`h-6 px-1.5 text-[10px] gap-1 ${tagCount > 0 ? 'text-emerald-500' : 'text-neutral-600'}`}
         >
           <Tag size={13} />
-          {tagCount > 0 && <span style={{ fontWeight: 500 }}>{tagCount}</span>}
-        </button>
-        <button
+          {tagCount > 0 && <span className="font-medium">{tagCount}</span>}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setShowNotes((v) => !v)}
           title="Comments"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: noteCount > 0 ? '#4a7aaa' : '#555', border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', borderRadius: 6, fontFamily: 'inherit' }}
+          className={`h-6 px-1.5 text-[10px] gap-1 ${noteCount > 0 ? 'text-blue-400' : 'text-neutral-600'}`}
         >
           <MessageSquare size={13} />
-          {noteCount > 0 && <span style={{ fontWeight: 500 }}>{noteCount}</span>}
-        </button>
+          {noteCount > 0 && <span className="font-medium">{noteCount}</span>}
+        </Button>
       </div>
 
       {/* Comments */}
@@ -520,7 +531,7 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
                           <p style={{ fontSize: 11, color: '#ccc', lineHeight: 1.45, margin: 0, wordBreak: 'break-word' }}>{note.text}</p>
                           <span style={{ fontSize: 9, color: '#555', marginTop: 2, display: 'block', letterSpacing: '0.01em' }}>{formatTs(note.ts)}</span>
                         </div>
-                        <button onClick={() => onDeleteNote(note.id)} title="Delete comment" style={{ border: 'none', background: 'transparent', color: '#444', cursor: 'pointer', fontSize: 14, lineHeight: 1, flexShrink: 0, padding: '2px 0 0' }}>×</button>
+                        <Button variant="ghost" size="sm" onClick={() => onDeleteNote(note.id)} title="Delete comment" className="w-5 h-5 p-0 text-neutral-600 hover:text-red-400 shrink-0">×</Button>
                       </div>
                     </div>
                   ))}
@@ -536,9 +547,9 @@ function KanbanCard({ item, onToggle, onDelete, onAddNote, onDeleteNote, onOpenT
                   style={{ flex: 1, fontSize: 11, border: '1px solid #333', borderRadius: 6, padding: '4px 7px', outline: 'none', fontFamily: 'inherit', color: '#e5e5e5', background: '#0a0a0a' }}
                 />
                 {noteText.trim() && (
-                  <button onClick={commitNote} style={{ padding: '3px 8px', border: '1px solid #7a8c5c', borderRadius: 6, background: '#7a8c5c', fontSize: 10, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                  <Button onClick={commitNote} size="sm" className="h-6 px-2 text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white shrink-0">
                     Save
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

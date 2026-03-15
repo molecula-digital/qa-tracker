@@ -1,17 +1,18 @@
-import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useEffect, useRef } from 'react'
+import { Button } from '@/components/ui/button'
 
 const COLORS = [
-  { label: 'Default',   value: '',        bg: '#f2ede3', border: '#ddd5c2' },
-  { label: 'Sage',      value: '#e8f0de', bg: '#e8f0de', border: '#b8ceaa' },
-  { label: 'Sky',       value: '#deeaf5', bg: '#deeaf5', border: '#a9c8e8' },
-  { label: 'Blush',     value: '#f5e4e4', bg: '#f5e4e4', border: '#e0b0b0' },
-  { label: 'Lavender',  value: '#ece8f5', bg: '#ece8f5', border: '#bfb0e0' },
-  { label: 'Peach',     value: '#f5ede0', bg: '#f5ede0', border: '#e0c090' },
-  { label: 'Mint',      value: '#dff5ef', bg: '#dff5ef', border: '#9fd8ca' },
-  { label: 'Lemon',     value: '#f5f2d0', bg: '#f5f2d0', border: '#d8cc80' },
-  { label: 'Slate',     value: '#e2e8f0', bg: '#e2e8f0', border: '#94a3b8' },
-  { label: 'Rose',      value: '#fce7f3', bg: '#fce7f3', border: '#f0abcb' },
+  { label: 'Default',   value: '',        bg: '#333',    border: '#555' },
+  { label: 'Sage',      value: '#e8f0de', bg: '#3a4a2e', border: '#4a5a3e' },
+  { label: 'Sky',       value: '#deeaf5', bg: '#2a3a4a', border: '#3a4a5a' },
+  { label: 'Blush',     value: '#f5e4e4', bg: '#4a2a2a', border: '#5a3a3a' },
+  { label: 'Lavender',  value: '#ece8f5', bg: '#3a2a4a', border: '#4a3a5a' },
+  { label: 'Peach',     value: '#f5ede0', bg: '#4a3a2a', border: '#5a4a3a' },
+  { label: 'Mint',      value: '#dff5ef', bg: '#2a4a3a', border: '#3a5a4a' },
+  { label: 'Lemon',     value: '#f5f2d0', bg: '#4a4a2a', border: '#5a5a3a' },
+  { label: 'Slate',     value: '#e2e8f0', bg: '#2a2e38', border: '#3a3e48' },
+  { label: 'Rose',      value: '#fce7f3', bg: '#4a2a3a', border: '#5a3a4a' },
 ]
 
 interface SectionColorPickerProps {
@@ -24,10 +25,9 @@ interface SectionColorPickerProps {
 export function SectionColorPicker({ currentColor, anchorEl, onSelect, onClose }: SectionColorPickerProps) {
   const popoverRef = useRef<HTMLDivElement>(null)
 
-  // Position below anchor
   const rect = anchorEl.getBoundingClientRect()
   const top = rect.bottom + window.scrollY + 6
-  const left = rect.left + window.scrollX
+  const left = Math.min(rect.left + window.scrollX, window.innerWidth - 220)
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -47,31 +47,26 @@ export function SectionColorPicker({ currentColor, anchorEl, onSelect, onClose }
   return createPortal(
     <div
       ref={popoverRef}
-      style={{
-        position: 'absolute', top, left, zIndex: 9999,
-        background: '#fff', border: '1px solid #ddd5c2', borderRadius: 12,
-        padding: '12px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-        display: 'flex', flexDirection: 'column', gap: 8,
-      }}
+      className="absolute z-[9999] rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl"
+      style={{ top, left }}
     >
-      <div style={{ fontSize: 11, color: '#8a7d6e', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+      <p className="text-[11px] text-neutral-500 uppercase tracking-wider font-semibold mb-2">
         Section color
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxWidth: 192 }}>
+      </p>
+      <div className="flex flex-wrap gap-1.5 max-w-[200px]">
         {COLORS.map((c) => {
           const active = (currentColor ?? '') === c.value
           return (
-            <button
+            <Button
               key={c.value || 'default'}
+              variant="ghost"
               title={c.label}
               onClick={() => { onSelect(c.value); onClose() }}
+              className="w-7 h-7 p-0 rounded-lg"
               style={{
-                width: 28, height: 28, borderRadius: 8,
                 background: c.bg,
-                border: active ? '2px solid #3a3228' : `1px solid ${c.border}`,
-                cursor: 'pointer', flexShrink: 0,
-                boxShadow: active ? '0 0 0 2px rgba(58,50,40,0.2)' : 'none',
-                transition: 'transform 0.1s',
+                border: active ? '2px solid #e5e5e5' : `1px solid ${c.border}`,
+                boxShadow: active ? '0 0 0 2px rgba(255,255,255,0.15)' : 'none',
               }}
             />
           )
