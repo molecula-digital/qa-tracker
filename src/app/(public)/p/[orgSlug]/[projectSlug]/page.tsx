@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { EmptyState } from "@/components/EmptyState";
@@ -64,6 +64,12 @@ export default function PublicProjectPage({
 }) {
   const { orgSlug, projectSlug } = use(params);
   const { data, isLoading, error } = usePublicBoard(orgSlug, projectSlug);
+
+  useEffect(() => {
+    if (data?.project.name) {
+      document.title = `${data.project.name} — Retrack`;
+    }
+  }, [data]);
 
   if (isLoading) {
     return (
