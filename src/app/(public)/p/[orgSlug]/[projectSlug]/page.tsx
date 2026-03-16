@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { EmptyState } from "@/components/EmptyState";
 import { LayoutGrid } from "lucide-react";
-import type { TagKey } from "@/types/tracker";
+import type { TagKey, PriorityKey } from "@/types/tracker";
 
 interface PublicSection {
   title: string;
@@ -14,6 +14,7 @@ interface PublicSection {
   items: {
     text: string;
     checked: boolean;
+    priority?: PriorityKey | null;
     tags: string[];
   }[];
 }
@@ -52,7 +53,7 @@ function adaptSections(sections: PublicSection[]) {
       id: `s-${si}-i-${ii}`,
       text: item.text,
       checked: item.checked,
-      priority: (item as { priority?: string }).priority as import('@/types/tracker').PriorityKey ?? null,
+      priority: item.priority ?? null,
       tags: item.tags as TagKey[],
       notes: [] as { id: string; text: string; ts: number }[],
     })),
