@@ -4,7 +4,7 @@ import { use, useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Search, Plus, X, CheckCircle2, LayoutGrid, ListTodo,
-  Activity, Clock, User, TrendingUp, Copy, ExternalLink, Check,
+  Activity, Clock, User, TrendingUp, Copy, ExternalLink, Check, Filter,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/hooks/use-projects";
@@ -24,7 +24,7 @@ import {
   useSetItemTags,
 } from "@/hooks/use-items";
 import { useCreateNote, useDeleteNote } from "@/hooks/use-notes";
-import { KanbanBoard } from "@/components/KanbanBoard";
+import { KanbanBoard, type BoardFilters, DEFAULT_FILTERS } from "@/components/KanbanBoard";
 import { TagPicker } from "@/components/TagPicker";
 import { EmptyState } from "@/components/EmptyState";
 import { ProjectLinks } from "@/components/ProjectLinks";
@@ -38,7 +38,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Item, Section, TagKey } from "@/types/tracker";
+import type { Item, Section, TagKey, PriorityKey } from "@/types/tracker";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useUpdateProject } from "@/hooks/use-projects";
 import { organization as orgClient } from "@/lib/auth-client";
 import { Switch } from "@/components/ui/switch";
@@ -437,6 +438,26 @@ export default function ProjectPage({
     anchorEl: HTMLButtonElement;
   } | null>(null);
 
+  const [filters, setFilters] = useState<BoardFilters>(DEFAULT_FILTERS);
+
+  const hasActiveFilters = filters.priority.length > 0 || filters.checked !== 'all' || filters.tags.length > 0 || filters.dateRange !== 'all';
+
+  const clearFilters = () => setFilters(DEFAULT_FILTERS);
+
+  const toggleFilterPriority = (p: PriorityKey) => {
+    setFilters((f) => ({
+      ...f,
+      priority: f.priority.includes(p) ? f.priority.filter((x) => x !== p) : [...f.priority, p],
+    }));
+  };
+
+  const toggleFilterTag = (t: TagKey) => {
+    setFilters((f) => ({
+      ...f,
+      tags: f.tags.includes(t) ? f.tags.filter((x) => x !== t) : [...f.tags, t],
+    }));
+  };
+
   // Mutations
   const createSection = useCreateSection();
   const updateSection = useUpdateSection();
@@ -546,7 +567,7 @@ export default function ProjectPage({
   );
 
   const handleAddItem = useCallback(
-    (sectionId: string, text: string) => {
+    (sectionId: string, text: string, priority?: PriorityKey, tags?: TagKey[]) => {
       const prev = optimisticBoard((old) => ({
         sections: old.sections.map((s) =>
           s.id === sectionId
@@ -554,14 +575,14 @@ export default function ProjectPage({
                 ...s,
                 items: [
                   ...s.items,
-                  { id: crypto.randomUUID(), text, checked: false, tags: [], notes: [] },
+                  { id: crypto.randomUUID(), text, checked: false, priority: priority ?? null, createdAt: Date.now(), tags: tags ?? [], notes: [] },
                 ],
               }
             : s
         ),
       }));
       createItem.mutate(
-        { sectionId, text },
+        { sectionId, text, priority, tags },
         {
           onError: () => rollbackBoard(prev),
           onSettled: invalidateBoard,
@@ -845,6 +866,169 @@ export default function ProjectPage({
         {/* Spacer */}
         <div className="flex-1" />
 
+        {/* Filter */}
+        <Popover>
+          <PopoverTrigger
+            className={`flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs transition-colors ${
+              hasActiveFilters
+                ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+          >
+            <Filter size={12} />
+            <span>Filter</span>
+            {hasActiveFilters && (
+              <span className="ml-0.5 w-4 h-4 rounded-full bg-emerald-500 text-[10px] text-white flex items-center justify-center font-medium">
+                {filters.priority.length + (filters.checked !== 'all' ? 1 : 0) + filters.tags.length + (filters.dateRange !== 'all' ? 1 : 0)}
+              </span>
+            )}
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 p-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Filters</span>
+                {hasActiveFilters && (
+                  <button onClick={clearFilters} className="text-[11px] text-muted-foreground hover:text-foreground">
+                    Clear all
+                  </button>
+                )}
+              </div>
+
+              {/* Priority filter */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Priority</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {(['low', 'medium', 'high', 'urgent'] as const).map((p) => {
+                    const active = filters.priority.includes(p)
+                    const colors: Record<string, string> = { urgent: '#e05555', high: '#e08a30', medium: '#d4a020', low: '#8888a0' }
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => toggleFilterPriority(p)}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border transition-colors"
+                        style={{
+                          background: active ? colors[p] + '20' : 'transparent',
+                          color: active ? colors[p] : 'var(--muted-foreground)',
+                          borderColor: active ? colors[p] + '40' : 'var(--border)',
+                        }}
+                      >
+                        <span style={{ background: colors[p] }} className="w-1.5 h-1.5 rounded-full" />
+                        {p}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Status filter */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Status</span>
+                <div className="flex gap-1.5">
+                  {(['all', 'unchecked', 'checked'] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setFilters((f) => ({ ...f, checked: s }))}
+                      className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                        filters.checked === s
+                          ? 'bg-foreground/10 text-foreground border-foreground/20'
+                          : 'text-muted-foreground border-border hover:text-foreground'
+                      }`}
+                    >
+                      {s === 'all' ? 'All' : s === 'checked' ? 'Done' : 'To do'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tag filter */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Tags</span>
+                <div className="flex gap-1.5">
+                  {(['bug', 'question', 'later'] as const).map((t) => {
+                    const active = filters.tags.includes(t)
+                    const colors: Record<string, string> = { bug: '#e05555', question: '#d4a020', later: '#4a8ae0' }
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => toggleFilterTag(t)}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border transition-colors"
+                        style={{
+                          background: active ? colors[t] + '20' : 'transparent',
+                          color: active ? colors[t] : 'var(--muted-foreground)',
+                          borderColor: active ? colors[t] + '40' : 'var(--border)',
+                        }}
+                      >
+                        <span style={{ background: colors[t] }} className="w-1.5 h-1.5 rounded-full" />
+                        {t}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Date filter */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Created</span>
+                <div className="flex gap-1.5">
+                  {(['all', 'today', 'week', 'month'] as const).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setFilters((f) => ({ ...f, dateRange: d }))}
+                      className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                        filters.dateRange === d
+                          ? 'bg-foreground/10 text-foreground border-foreground/20'
+                          : 'text-muted-foreground border-border hover:text-foreground'
+                      }`}
+                    >
+                      {d === 'all' ? 'All' : d === 'today' ? 'Today' : d === 'week' ? 'This week' : 'This month'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Active filter pills */}
+        {hasActiveFilters && (
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {filters.priority.map((p) => (
+              <button
+                key={p}
+                onClick={() => toggleFilterPriority(p)}
+                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted border border-border text-foreground shrink-0"
+              >
+                {p} <X size={10} />
+              </button>
+            ))}
+            {filters.checked !== 'all' && (
+              <button
+                onClick={() => setFilters((f) => ({ ...f, checked: 'all' }))}
+                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted border border-border text-foreground shrink-0"
+              >
+                {filters.checked === 'checked' ? 'Done' : 'To do'} <X size={10} />
+              </button>
+            )}
+            {filters.tags.map((t) => (
+              <button
+                key={t}
+                onClick={() => toggleFilterTag(t)}
+                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted border border-border text-foreground shrink-0"
+              >
+                {t} <X size={10} />
+              </button>
+            ))}
+            {filters.dateRange !== 'all' && (
+              <button
+                onClick={() => setFilters((f) => ({ ...f, dateRange: 'all' }))}
+                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted border border-border text-foreground shrink-0"
+              >
+                {filters.dateRange} <X size={10} />
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Search toggle */}
         {searchOpen ? (
           <div className="flex items-center gap-1.5 bg-muted border border-border rounded-md px-2 h-7">
@@ -914,6 +1098,7 @@ export default function ProjectPage({
               <KanbanBoard
                 sections={sections}
                 search={search}
+                filters={filters}
                 newestSectionId={newestSectionId}
                 onToggleItem={handleToggleItem}
                 onAddItem={handleAddItem}
