@@ -29,6 +29,8 @@ items.post(
       sectionId: z.string().min(1),
       text: z.string().min(1).max(500),
       order: z.number().int().optional(),
+      priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+      tags: z.array(z.enum(["bug", "question", "later"])).optional(),
     })
   ),
   async (c) => {
@@ -53,6 +55,7 @@ items.put(
       checked: z.boolean().optional(),
       order: z.number().int().optional(),
       sectionId: z.string().min(1).optional(),
+      priority: z.enum(["low", "medium", "high", "urgent"]).nullable().optional(),
     })
   ),
   async (c) => {
