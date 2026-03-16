@@ -63,6 +63,8 @@ export async function getBoard(orgId: string, projectId: string) {
       id: i.id,
       text: i.text,
       checked: i.checked,
+      priority: i.priority ?? null,
+      createdAt: new Date(i.createdAt).getTime(),
       tags: tagsByItem.get(i.id) ?? [],
       notes: notesByItem.get(i.id) ?? [],
     });
@@ -139,6 +141,7 @@ export async function getBoardForAI(orgId: string, projectId: string) {
       id: i.id,
       text: i.text,
       checked: i.checked,
+      priority: i.priority ?? null,
       tags: tagsByItem.get(i.id) ?? [],
       noteCount: noteCountMap.get(i.id) ?? 0,
     });
