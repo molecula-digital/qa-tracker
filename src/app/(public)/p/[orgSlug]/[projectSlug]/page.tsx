@@ -52,6 +52,7 @@ function adaptSections(sections: PublicSection[]) {
       id: `s-${si}-i-${ii}`,
       text: item.text,
       checked: item.checked,
+      priority: (item as { priority?: string }).priority as import('@/types/tracker').PriorityKey ?? null,
       tags: item.tags as TagKey[],
       notes: [] as { id: string; text: string; ts: number }[],
     })),

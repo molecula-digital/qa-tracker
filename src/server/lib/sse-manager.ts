@@ -11,7 +11,7 @@ export type SSEPatch =
   | { action: "section:update"; sectionId: string; data: Record<string, unknown> }
   | { action: "section:delete"; sectionId: string }
   | { action: "section:reorder"; sectionIds: string[] }
-  | { action: "item:create"; sectionId: string; data: { id: string; text: string; checked: boolean; tags: string[]; notes: never[] } }
+  | { action: "item:create"; sectionId: string; data: { id: string; text: string; checked: boolean; priority?: string | null; tags: string[]; notes: never[] } }
   | { action: "item:update"; sectionId: string; itemId: string; data: Record<string, unknown> }
   | { action: "item:delete"; sectionId: string; itemId: string }
   | { action: "item:tags"; sectionId: string; itemId: string; tags: string[] }
