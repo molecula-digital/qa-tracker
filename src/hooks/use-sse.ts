@@ -54,11 +54,11 @@ function applyPatch(board: BoardData, patch: Record<string, unknown>): BoardData
     }
     case "item:create": {
       const sectionId = patch.sectionId as string;
-      const d = patch.data as { id: string; text: string; checked: boolean; tags: string[]; notes: never[] };
+      const d = patch.data as { id: string; text: string; checked: boolean; priority: string | null; tags: string[]; notes: never[] };
       return {
         sections: board.sections.map((s) =>
           s.id === sectionId
-            ? { ...s, items: [...s.items, { id: d.id, text: d.text, checked: d.checked, tags: d.tags as Item["tags"], notes: [] }] }
+            ? { ...s, items: [...s.items, { id: d.id, text: d.text, checked: d.checked, priority: (d.priority ?? null) as Item["priority"], createdAt: Date.now(), tags: d.tags as Item["tags"], notes: [] }] }
             : s
         ),
       };
