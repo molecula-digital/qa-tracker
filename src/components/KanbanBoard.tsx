@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag, MessageSquare, ClipboardList, CheckCircle2, Trash2, Plus, Sparkles, Palette, MoreHorizontal, ChevronsDown } from 'lucide-react'
-import type { Section, Item, TagKey, Note } from '../types/tracker'
+import { Tag, MessageSquare, ClipboardList, CheckCircle2, Trash2, Plus, Sparkles, Palette, MoreHorizontal, ChevronsDown, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import type { Section, Item, TagKey, PriorityKey, Note } from '../types/tracker'
 import { SECTION_ICONS, ICON_GROUPS, type SectionIconKey } from './SectionIcons'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu'
+import { AddItemModal } from './AddItemModal'
 
 function getHeaderColor(hex: string | undefined, isDark: boolean): string {
   if (!hex) return 'var(--kanban-header)'
@@ -34,6 +35,21 @@ const TAG_COLORS: Record<TagKey, string> = {
   later: '#4a8ae0',
 }
 
+const PRIORITY_COLORS: Record<PriorityKey, string> = {
+  urgent: '#e05555',
+  high: '#e08a30',
+  medium: '#d4a020',
+  low: '#8888a0',
+}
+
+const PRIORITY_ORDER: Record<string, number> = {
+  urgent: 0, high: 1, medium: 2, low: 3,
+}
+
+const PRIORITY_LABELS: Record<PriorityKey, string> = {
+  urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low',
+}
+
 const SECTION_COLORS = [
   { label: 'Default',   value: '',        lightBg: '#e8e4dd', darkBg: '#333' },
   { label: 'Sage',      value: '#e8f0de', lightBg: '#e8f0de', darkBg: '#3a4a2e' },
@@ -47,6 +63,81 @@ const SECTION_COLORS = [
   { label: 'Rose',      value: '#fce7f3', lightBg: '#fce7f3', darkBg: '#4a2a3a' },
 ]
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+export interface BoardFilters {
+  priority: PriorityKey[]
+  checked: 'all' | 'checked' | 'unchecked'
+  tags: TagKey[]
+  dateRange: 'all' | 'today' | 'week' | 'month'
+}
+
+interface ColumnSort {
+  field: 'default' | 'priority' | 'date' | 'checked' | 'alpha'
+  direction: 'asc' | 'desc'
+}
+
+export const DEFAULT_FILTERS: BoardFilters = {
+  priority: [],
+  checked: 'all',
+  tags: [],
+  dateRange: 'all',
+}
+
+function renderTextWithLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s<>"')\]]+)/g
+  const parts = text.split(urlRegex)
+  if (parts.length === 1) return text
+  return parts.map((part, i) =>
+    urlRegex.test(part)
+      ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline break-all">{part}</a>
+      : part
+  )
+}
+
+function isWithinRange(ts: number | undefined, range: 'today' | 'week' | 'month'): boolean {
+  if (!ts) return false
+  const now = Date.now()
+  const diff = now - ts
+  switch (range) {
+    case 'today': return diff < 86_400_000
+    case 'week': return diff < 604_800_000
+    case 'month': return diff < 2_592_000_000
+  }
+}
+
+function applyFilters(items: Item[], filters: BoardFilters): Item[] {
+  let result = items
+  if (filters.priority.length > 0)
+    result = result.filter((i) => i.priority != null && filters.priority.includes(i.priority))
+  if (filters.checked !== 'all')
+    result = result.filter((i) => filters.checked === 'checked' ? i.checked : !i.checked)
+  if (filters.tags.length > 0)
+    result = result.filter((i) => i.tags.some((t) => filters.tags.includes(t)))
+  if (filters.dateRange !== 'all')
+    result = result.filter((i) => isWithinRange(i.createdAt, filters.dateRange as 'today' | 'week' | 'month'))
+  return result
+}
+
+function applySorting(items: Item[], sort: ColumnSort): Item[] {
+  if (sort.field === 'default') return items
+  const dir = sort.direction === 'asc' ? 1 : -1
+  return items.slice().sort((a, b) => {
+    switch (sort.field) {
+      case 'priority':
+        return dir * ((PRIORITY_ORDER[a.priority ?? ''] ?? 4) - (PRIORITY_ORDER[b.priority ?? ''] ?? 4))
+      case 'date':
+        return dir * ((a.createdAt ?? 0) - (b.createdAt ?? 0))
+      case 'checked':
+        return dir * (Number(a.checked) - Number(b.checked))
+      case 'alpha':
+        return dir * a.text.localeCompare(b.text)
+      default:
+        return 0
+    }
+  })
+}
+
 // ─── Board ────────────────────────────────────────────────────────────────────
 
 interface KanbanBoardProps {
@@ -54,8 +145,9 @@ interface KanbanBoardProps {
   search: string
   newestSectionId: string | null
   readOnly?: boolean
+  filters?: BoardFilters
   onToggleItem: (sectionId: string, itemId: string) => void
-  onAddItem: (sectionId: string, text: string) => void
+  onAddItem: (sectionId: string, text: string, priority?: PriorityKey, tags?: TagKey[]) => void
   onUpdateItemText: (sectionId: string, itemId: string, text: string) => void
   onDeleteItem: (sectionId: string, itemId: string) => void
   onAddNote: (sectionId: string, itemId: string, text: string) => void
@@ -70,7 +162,7 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({
-  sections, search, newestSectionId, readOnly,
+  sections, search, newestSectionId, readOnly, filters,
   onToggleItem, onAddItem, onUpdateItemText, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateSectionTitle, onColorChange, onIconChange,
   onReorder, onOpenTagPicker, onAddSection,
@@ -114,8 +206,9 @@ export function KanbanBoard({
               onDragOver={() => setDropIndex(i)}
               onDragEnd={() => { setDragIndex(null); setDropIndex(null) }}
               onDrop={() => handleDrop(i)}
+              filters={filters}
               onToggleItem={(itemId) => onToggleItem(section.id, itemId)}
-              onAddItem={(text) => onAddItem(section.id, text)}
+              onAddItem={(text, priority, tags) => onAddItem(section.id, text, priority, tags)}
               onUpdateItemText={(itemId, text) => onUpdateItemText(section.id, itemId, text)}
               onDeleteItem={(itemId) => onDeleteItem(section.id, itemId)}
               onAddNote={(itemId, text) => onAddNote(section.id, itemId, text)}
@@ -166,12 +259,13 @@ interface KanbanColumnProps {
   isDropTarget: boolean
   isDraggingAny: boolean
   isDark: boolean
+  filters?: BoardFilters
   onDragStart: () => void
   onDragOver: () => void
   onDragEnd: () => void
   onDrop: () => void
   onToggleItem: (itemId: string) => void
-  onAddItem: (text: string) => void
+  onAddItem: (text: string, priority?: PriorityKey, tags?: TagKey[]) => void
   onUpdateItemText: (itemId: string, text: string) => void
   onDeleteItem: (itemId: string) => void
   onAddNote: (itemId: string, text: string) => void
@@ -185,7 +279,7 @@ interface KanbanColumnProps {
 }
 
 function KanbanColumn({
-  section, search, isNew, isDragging, isDropTarget, isDraggingAny, isDark,
+  section, search, isNew, isDragging, isDropTarget, isDraggingAny, isDark, filters,
   onDragStart, onDragOver, onDragEnd, onDrop,
   onToggleItem, onAddItem, onUpdateItemText, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateTitle, onColorChange, onIconChange,
@@ -193,6 +287,8 @@ function KanbanColumn({
 }: KanbanColumnProps) {
   const [addInputVal, setAddInputVal] = useState('')
   const [iconGroup, setIconGroup] = useState(0)
+  const [sort, setSort] = useState<ColumnSort>({ field: 'default', direction: 'asc' })
+  const [addModalOpen, setAddModalOpen] = useState(false)
   const [hasOverflowBelow, setHasOverflowBelow] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
   const addInputRef = useRef<HTMLInputElement>(null)
@@ -207,9 +303,21 @@ function KanbanColumn({
 
   const SectionIcon = section.icon ? SECTION_ICONS[section.icon as SectionIconKey] : null
   const filtered = (() => {
-    const items = section.items.filter(
+    let items = section.items.filter(
       (i) => !search || i.text.toLowerCase().includes(search.toLowerCase()),
     )
+
+    // Apply board-level filters
+    if (filters) {
+      items = applyFilters(items, filters)
+    }
+
+    // Apply sort
+    if (sort.field !== 'default') {
+      return applySorting(items, sort)
+    }
+
+    // Default sort: unchecked first
     const hasUnchecked = items.some((i) => !i.checked)
     if (hasUnchecked) {
       const sorted = items.slice().sort((a, b) => (a.checked === b.checked ? 0 : a.checked ? 1 : -1))
@@ -305,6 +413,23 @@ function KanbanColumn({
         }`}>
           {done}/{total}
         </span>
+        {sort.field !== 'default' && (
+          <span className="flex items-center text-muted-foreground/60 shrink-0" title={`Sorted by ${sort.field}`}>
+            {sort.direction === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
+          </span>
+        )}
+
+        {/* + Add item button */}
+        {!readOnly && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setAddModalOpen(true) }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="inline-flex items-center justify-center w-6 h-5 rounded text-muted-foreground hover:text-foreground shrink-0 outline-none"
+            title="Add item"
+          >
+            <Plus size={14} />
+          </button>
+        )}
 
         {/* ··· Menu */}
         {!readOnly && (
@@ -316,6 +441,45 @@ function KanbanColumn({
               <MoreHorizontal size={14} />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              {/* Sort submenu */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="gap-2">
+                  <ArrowUpDown size={14} />
+                  Sort by
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-48">
+                  {([
+                    { field: 'default', label: 'Default' },
+                    { field: 'priority', label: 'Priority' },
+                    { field: 'date', label: 'Creation date' },
+                    { field: 'checked', label: 'Status' },
+                    { field: 'alpha', label: 'Alphabetical' },
+                  ] as const).map((opt) => (
+                    <DropdownMenuItem
+                      key={opt.field}
+                      onClick={() => {
+                        if (sort.field === opt.field && opt.field !== 'default') {
+                          setSort({ field: opt.field, direction: sort.direction === 'asc' ? 'desc' : 'asc' })
+                        } else {
+                          setSort({ field: opt.field, direction: 'asc' })
+                        }
+                      }}
+                      className="gap-2 justify-between"
+                    >
+                      <span>{opt.label}</span>
+                      {sort.field === opt.field && opt.field !== 'default' && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {sort.direction === 'asc' ? '\u2191' : '\u2193'}
+                        </span>
+                      )}
+                      {sort.field === opt.field && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
               {/* Color submenu */}
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="gap-2">
@@ -500,6 +664,16 @@ function KanbanColumn({
         </div>
       )}
 
+      {addModalOpen && (
+        <AddItemModal
+          open={addModalOpen}
+          onClose={() => setAddModalOpen(false)}
+          onSubmit={({ text, priority, tags }) => {
+            onAddItem(text, priority, tags)
+            setAddModalOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -578,7 +752,6 @@ function KanbanCard({ item, onToggle, onUpdateText, onDelete, onAddNote, onDelet
               if (e.key === 'Escape') { setEditText(item.text); setEditing(false) }
             }}
             autoFocus
-            rows={1}
             className="flex-1 text-[13px] leading-relaxed border border-border rounded-md bg-kanban-input-bg px-1.5 py-0.5 outline-none text-foreground font-[inherit] resize-none focus:ring-1 focus:ring-ring/30 transition-colors"
             style={{ fieldSizing: 'content' } as React.CSSProperties}
           />
@@ -630,6 +803,23 @@ function KanbanCard({ item, onToggle, onUpdateText, onDelete, onAddNote, onDelet
               {tag}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Priority pill */}
+      {item.priority && (
+        <div className="pl-7">
+          <span
+            style={{
+              background: PRIORITY_COLORS[item.priority] + '15',
+              color: PRIORITY_COLORS[item.priority],
+              borderColor: PRIORITY_COLORS[item.priority] + '30',
+            }}
+            className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border"
+          >
+            <span style={{ background: PRIORITY_COLORS[item.priority] }} className="w-1.5 h-1.5 rounded-full" />
+            {PRIORITY_LABELS[item.priority]}
+          </span>
         </div>
       )}
 
@@ -687,7 +877,7 @@ function KanbanCard({ item, onToggle, onUpdateText, onDelete, onAddNote, onDelet
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0 pb-0.5">
-                          <p className="text-[11px] text-foreground/80 leading-relaxed m-0 wrap-break-word">{note.text}</p>
+                          <p className="text-[11px] text-foreground/80 leading-relaxed m-0 wrap-break-word select-text cursor-text">{renderTextWithLinks(note.text)}</p>
                           <span className="text-[9px] text-muted-foreground/60 mt-0.5 block tracking-wide font-mono">{formatTs(note.ts)}</span>
                         </div>
                         <Button
