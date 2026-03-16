@@ -50,7 +50,7 @@ export async function createItem(
   orgId: string,
   userId: string,
   userName: string,
-  data: { sectionId: string; text: string; order?: number }
+  data: { sectionId: string; text: string; order?: number; priority?: "low" | "medium" | "high" | "urgent"; tags?: ("bug" | "question" | "later")[] }
 ) {
   if (!(await verifySectionOrg(data.sectionId, orgId))) {
     return { error: "Section not found" } as const;
@@ -66,17 +66,28 @@ export async function createItem(
       text: data.text,
       checked: false,
       order: data.order ?? 0,
+      priority: data.priority ?? null,
       createdAt: now,
       updatedAt: now,
     })
     .returning();
+
+  if (data.tags && data.tags.length > 0) {
+    await db.insert(itemTag).values(
+      data.tags.map((tag) => ({
+        id: crypto.randomUUID(),
+        itemId: id,
+        tag,
+      }))
+    );
+  }
 
   const projectId = await getProjectId(data.sectionId);
   if (projectId) {
     sseManager.broadcastPatch(projectId, {
       action: "item:create",
       sectionId: data.sectionId,
-      data: { id, text: data.text, checked: false, tags: [], notes: [] as never[] },
+      data: { id, text: data.text, checked: false, priority: data.priority ?? null, tags: data.tags ?? [], notes: [] as never[] },
     });
     logActivity({
       projectId,
@@ -89,7 +100,7 @@ export async function createItem(
     });
   }
 
-  return { ...row, tags: [] };
+  return { ...row, tags: data.tags ?? [] };
 }
 
 export async function updateItem(
@@ -97,7 +108,7 @@ export async function updateItem(
   userId: string,
   userName: string,
   itemId: string,
-  data: { text?: string; checked?: boolean; order?: number; sectionId?: string }
+  data: { text?: string; checked?: boolean; order?: number; sectionId?: string; priority?: "low" | "medium" | "high" | "urgent" | null }
 ) {
   const [existing] = await db.select().from(item).where(eq(item.id, itemId));
   if (!existing) return null;
@@ -120,7 +131,7 @@ export async function updateItem(
       action: "item:update",
       sectionId: existing.sectionId,
       itemId,
-      data: { text: row.text, checked: row.checked },
+      data: { text: row.text, checked: row.checked, priority: row.priority ?? null },
     });
     const action =
       data.checked !== undefined
