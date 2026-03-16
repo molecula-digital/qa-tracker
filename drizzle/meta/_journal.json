@@ -36,6 +36,13 @@
       "when": 1773609334301,
       "tag": "0004_nifty_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1773631937382,
+      "tag": "0005_military_blue_shield",
+      "breakpoints": true
     }
   ]
 }

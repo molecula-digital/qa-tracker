@@ -3,12 +3,15 @@ import { section } from "./sections";
 
 export const tagEnum = pgEnum("tag", ["bug", "question", "later"]);
 
+export const priorityEnum = pgEnum("priority", ["low", "medium", "high", "urgent"]);
+
 export const item = pgTable("item", {
   id: text("id").primaryKey(),
   sectionId: text("section_id").notNull().references(() => section.id, { onDelete: "cascade" }),
   text: text("text").notNull(),
   checked: boolean("checked").notNull().default(false),
   order: integer("order").notNull().default(0),
+  priority: priorityEnum("priority"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
