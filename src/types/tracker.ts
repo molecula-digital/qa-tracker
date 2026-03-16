@@ -1,5 +1,7 @@
 export type TagKey = 'bug' | 'question' | 'later'
 
+export type PriorityKey = 'low' | 'medium' | 'high' | 'urgent'
+
 export interface Note {
   id: string
   text: string
@@ -12,6 +14,8 @@ export interface Item {
   checked: boolean
   tags: TagKey[]
   notes: Note[]
+  priority: PriorityKey | null
+  createdAt?: number
 }
 
 export interface Section {
