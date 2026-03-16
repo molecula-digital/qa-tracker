@@ -34,6 +34,8 @@ export function useCreateItem() {
       sectionId: string;
       text: string;
       order?: number;
+      priority?: "low" | "medium" | "high" | "urgent";
+      tags?: ("bug" | "question" | "later")[];
     }) =>
       fetchJSON<Item>("/api/items", {
         method: "POST",
@@ -56,6 +58,7 @@ export function useUpdateItem() {
       checked?: boolean;
       order?: number;
       sectionId?: string; // target section for moves
+      priority?: "low" | "medium" | "high" | "urgent" | null;
     }) => {
       const { id, currentSectionId: _, ...data } = vars;
       return fetchJSON<Item>(`/api/items/${id}`, {
