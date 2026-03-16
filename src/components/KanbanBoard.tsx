@@ -149,6 +149,7 @@ interface KanbanBoardProps {
   onToggleItem: (sectionId: string, itemId: string) => void
   onAddItem: (sectionId: string, text: string, priority?: PriorityKey, tags?: TagKey[]) => void
   onUpdateItemText: (sectionId: string, itemId: string, text: string) => void
+  onUpdateItemPriority: (sectionId: string, itemId: string, priority: PriorityKey | null) => void
   onDeleteItem: (sectionId: string, itemId: string) => void
   onAddNote: (sectionId: string, itemId: string, text: string) => void
   onDeleteNote: (sectionId: string, itemId: string, noteId: string) => void
@@ -163,7 +164,7 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({
   sections, search, newestSectionId, readOnly, filters,
-  onToggleItem, onAddItem, onUpdateItemText, onDeleteItem, onAddNote, onDeleteNote,
+  onToggleItem, onAddItem, onUpdateItemText, onUpdateItemPriority, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateSectionTitle, onColorChange, onIconChange,
   onReorder, onOpenTagPicker, onAddSection,
 }: KanbanBoardProps) {
@@ -210,6 +211,7 @@ export function KanbanBoard({
               onToggleItem={(itemId) => onToggleItem(section.id, itemId)}
               onAddItem={(text, priority, tags) => onAddItem(section.id, text, priority, tags)}
               onUpdateItemText={(itemId, text) => onUpdateItemText(section.id, itemId, text)}
+              onUpdateItemPriority={(itemId, priority) => onUpdateItemPriority(section.id, itemId, priority)}
               onDeleteItem={(itemId) => onDeleteItem(section.id, itemId)}
               onAddNote={(itemId, text) => onAddNote(section.id, itemId, text)}
               onDeleteNote={(itemId, noteId) => onDeleteNote(section.id, itemId, noteId)}
@@ -267,6 +269,7 @@ interface KanbanColumnProps {
   onToggleItem: (itemId: string) => void
   onAddItem: (text: string, priority?: PriorityKey, tags?: TagKey[]) => void
   onUpdateItemText: (itemId: string, text: string) => void
+  onUpdateItemPriority: (itemId: string, priority: PriorityKey | null) => void
   onDeleteItem: (itemId: string) => void
   onAddNote: (itemId: string, text: string) => void
   onDeleteNote: (itemId: string, noteId: string) => void
@@ -281,7 +284,7 @@ interface KanbanColumnProps {
 function KanbanColumn({
   section, search, isNew, isDragging, isDropTarget, isDraggingAny, isDark, filters,
   onDragStart, onDragOver, onDragEnd, onDrop,
-  onToggleItem, onAddItem, onUpdateItemText, onDeleteItem, onAddNote, onDeleteNote,
+  onToggleItem, onAddItem, onUpdateItemText, onUpdateItemPriority, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateTitle, onColorChange, onIconChange,
   onOpenTagPicker, readOnly,
 }: KanbanColumnProps) {
@@ -598,6 +601,7 @@ function KanbanColumn({
                   item={item}
                   onToggle={() => onToggleItem(item.id)}
                   onUpdateText={(text) => onUpdateItemText(item.id, text)}
+                  onUpdatePriority={(priority) => onUpdateItemPriority(item.id, priority)}
                   onDelete={() => onDeleteItem(item.id)}
                   onAddNote={(text) => onAddNote(item.id, text)}
                   onDeleteNote={(noteId) => onDeleteNote(item.id, noteId)}
@@ -684,6 +688,7 @@ interface KanbanCardProps {
   item: Item
   onToggle: () => void
   onUpdateText: (text: string) => void
+  onUpdatePriority: (priority: PriorityKey | null) => void
   onDelete: () => void
   onAddNote: (text: string) => void
   onDeleteNote: (noteId: string) => void
@@ -691,7 +696,7 @@ interface KanbanCardProps {
   readOnly?: boolean
 }
 
-function KanbanCard({ item, onToggle, onUpdateText, onDelete, onAddNote, onDeleteNote, onOpenTagPicker, readOnly }: KanbanCardProps) {
+function KanbanCard({ item, onToggle, onUpdateText, onUpdatePriority, onDelete, onAddNote, onDeleteNote, onOpenTagPicker, readOnly }: KanbanCardProps) {
   const tagBtnRef = useRef<HTMLButtonElement>(null)
   const [showNotes, setShowNotes] = useState(false)
   const [noteText, setNoteText] = useState('')
@@ -826,7 +831,7 @@ function KanbanCard({ item, onToggle, onUpdateText, onDelete, onAddNote, onDelet
       {/* Footer actions */}
       {!readOnly && (
         <div className={`flex items-center gap-0.5 pl-6 ${
-          (tagCount > 0 || noteCount > 0) ? '' : 'opacity-0 group-hover/card:opacity-100 transition-opacity'
+          (tagCount > 0 || noteCount > 0 || item.priority) ? '' : 'opacity-0 group-hover/card:opacity-100 transition-opacity'
         }`}>
           <Button
             ref={tagBtnRef}
@@ -839,6 +844,36 @@ function KanbanCard({ item, onToggle, onUpdateText, onDelete, onAddNote, onDelet
             <Tag size={12} />
             {tagCount > 0 && <span className="font-medium">{tagCount}</span>}
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className={`inline-flex items-center gap-1 h-5 px-1.5 text-[10px] rounded-sm hover:bg-accent ${item.priority ? '' : 'text-muted-foreground/50 hover:text-muted-foreground'}`}
+              style={item.priority ? { color: PRIORITY_COLORS[item.priority] } : undefined}
+            >
+              <ArrowUp size={12} />
+              {item.priority && <span className="font-medium">{PRIORITY_LABELS[item.priority]}</span>}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-36">
+              {(['urgent', 'high', 'medium', 'low'] as const).map((p) => (
+                <DropdownMenuItem
+                  key={p}
+                  onClick={() => onUpdatePriority(item.priority === p ? null : p)}
+                  className="gap-2 text-[12px]"
+                >
+                  <span style={{ background: PRIORITY_COLORS[p] }} className="w-2 h-2 rounded-full shrink-0" />
+                  {PRIORITY_LABELS[p]}
+                  {item.priority === p && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                </DropdownMenuItem>
+              ))}
+              {item.priority && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onUpdatePriority(null)} className="gap-2 text-[12px] text-muted-foreground">
+                    Clear priority
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="ghost"
             size="sm"

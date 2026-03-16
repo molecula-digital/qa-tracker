@@ -129,6 +129,7 @@ export default function PublicProjectPage({
             onToggleItem={() => {}}
             onAddItem={() => {}}
             onUpdateItemText={() => {}}
+            onUpdateItemPriority={() => {}}
             onDeleteItem={() => {}}
             onAddNote={() => {}}
             onDeleteNote={() => {}}

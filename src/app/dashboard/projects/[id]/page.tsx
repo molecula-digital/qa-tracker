@@ -566,6 +566,26 @@ export default function ProjectPage({
     [updateItem, invalidateBoard, optimisticBoard, rollbackBoard]
   );
 
+  const handleUpdateItemPriority = useCallback(
+    (sectionId: string, itemId: string, priority: PriorityKey | null) => {
+      const prev = optimisticBoard((old) => ({
+        sections: old.sections.map((s) =>
+          s.id === sectionId
+            ? { ...s, items: s.items.map((i: Item) => (i.id === itemId ? { ...i, priority } : i)) }
+            : s
+        ),
+      }));
+      updateItem.mutate(
+        { id: itemId, currentSectionId: sectionId, priority },
+        {
+          onError: () => rollbackBoard(prev),
+          onSettled: invalidateBoard,
+        }
+      );
+    },
+    [updateItem, invalidateBoard, optimisticBoard, rollbackBoard]
+  );
+
   const handleAddItem = useCallback(
     (sectionId: string, text: string, priority?: PriorityKey, tags?: TagKey[]) => {
       const prev = optimisticBoard((old) => ({
@@ -1103,6 +1123,7 @@ export default function ProjectPage({
                 onToggleItem={handleToggleItem}
                 onAddItem={handleAddItem}
                 onUpdateItemText={handleUpdateItemText}
+                onUpdateItemPriority={handleUpdateItemPriority}
                 onDeleteItem={handleDeleteItem}
                 onAddNote={handleAddNote}
                 onDeleteNote={handleDeleteNote}
