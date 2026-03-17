@@ -1,50 +1,51 @@
 import {
-  // Financial
-  DollarSign, TrendingUp, TrendingDown, BarChart2, BarChart3,
-  LineChart, PieChart, CreditCard, Wallet, Receipt,
-  Landmark, Percent, Calculator, Banknote, ArrowUpRight,
-  ArrowDownRight, HandCoins, CircleDollarSign, ShieldCheck, PiggyBank,
-  // Generic
-  Star, Flag, Target, Zap, Shield, Globe, Users, Settings,
-  Calendar, Bell, Rocket, Heart, Code, Database, Package,
-  Briefcase, Home, Mail, BookOpen, FileText, Folder, Award,
-  Gift, Lock, Timer, Activity, Layers, CheckSquare, ListChecks,
+  // Project management
+  Target, Flag, Milestone, ClipboardList, ListChecks, CheckSquare,
+  Timer, Clock, Calendar, CalendarDays, Kanban,
+  // Development
+  Code, Terminal, Bug, GitBranch, GitPullRequest, Server,
+  Cloud, Database, Cpu, Monitor, Smartphone, Wifi,
+  // Finance
+  DollarSign, CreditCard, Wallet, Receipt, Landmark, PiggyBank,
+  TrendingUp, TrendingDown, BarChart2, PieChart, LineChart, Calculator,
+  // Communication
+  Mail, MessageSquare, Bell, Phone, Video, Megaphone, Send,
+  // Content
+  FileText, Folder, BookOpen, Newspaper, PenTool, Image, Camera, Music,
+  // People/Org
+  Users, UserPlus, Briefcase, Building2, GraduationCap, Heart, HandHeart,
+  // Objects
+  Package, Truck, ShoppingCart, Gift, Key, Lock, Shield, Wrench, Settings, Hammer,
+  // Nature/Abstract
+  Zap, Star, Rocket, Globe, Map, Sun, Moon, Flame, Leaf, Mountain, Compass,
+  // Status
+  Activity, Award, Crown, ThumbsUp, AlertTriangle, Info, CircleCheck, Eye,
 } from 'lucide-react'
 
 export const SECTION_ICONS = {
-  // Financial
-  DollarSign, TrendingUp, TrendingDown, BarChart2, BarChart3,
-  LineChart, PieChart, CreditCard, Wallet, Receipt,
-  Landmark, Percent, Calculator, Banknote, ArrowUpRight,
-  ArrowDownRight, HandCoins, CircleDollarSign, ShieldCheck, PiggyBank,
-  // Generic
-  Star, Flag, Target, Zap, Shield, Globe, Users, Settings,
-  Calendar, Bell, Rocket, Heart, Code, Database, Package,
-  Briefcase, Home, Mail, BookOpen, FileText, Folder, Award,
-  Gift, Lock, Timer, Activity, Layers, CheckSquare, ListChecks,
+  // Project management
+  Target, Flag, Milestone, ClipboardList, ListChecks, CheckSquare,
+  Timer, Clock, Calendar, CalendarDays, Kanban,
+  // Development
+  Code, Terminal, Bug, GitBranch, GitPullRequest, Server,
+  Cloud, Database, Cpu, Monitor, Smartphone, Wifi,
+  // Finance
+  DollarSign, CreditCard, Wallet, Receipt, Landmark, PiggyBank,
+  TrendingUp, TrendingDown, BarChart2, PieChart, LineChart, Calculator,
+  // Communication
+  Mail, MessageSquare, Bell, Phone, Video, Megaphone, Send,
+  // Content
+  FileText, Folder, BookOpen, Newspaper, PenTool, Image, Camera, Music,
+  // People/Org
+  Users, UserPlus, Briefcase, Building2, GraduationCap, Heart, HandHeart,
+  // Objects
+  Package, Truck, ShoppingCart, Gift, Key, Lock, Shield, Wrench, Settings, Hammer,
+  // Nature/Abstract
+  Zap, Star, Rocket, Globe, Map, Sun, Moon, Flame, Leaf, Mountain, Compass,
+  // Status
+  Activity, Award, Crown, ThumbsUp, AlertTriangle, Info, CircleCheck, Eye,
 } as const
 
 export type SectionIconKey = keyof typeof SECTION_ICONS
 
-export const ICON_GROUPS = [
-  {
-    label: 'Financial',
-    keys: [
-      'DollarSign', 'CircleDollarSign', 'Banknote', 'CreditCard', 'Wallet',
-      'HandCoins', 'PiggyBank', 'Receipt', 'Landmark', 'Calculator',
-      'Percent', 'TrendingUp', 'TrendingDown', 'ArrowUpRight', 'ArrowDownRight',
-      'BarChart2', 'BarChart3', 'LineChart', 'PieChart', 'ShieldCheck',
-    ] as SectionIconKey[],
-  },
-  {
-    label: 'General',
-    keys: [
-      'Briefcase', 'Target', 'Flag', 'Star', 'Award',
-      'CheckSquare', 'ListChecks', 'FileText', 'Folder', 'BookOpen',
-      'Calendar', 'Timer', 'Bell', 'Mail', 'Globe',
-      'Users', 'Home', 'Package', 'Database', 'Settings',
-      'Shield', 'Lock', 'Code', 'Activity', 'Layers',
-      'Heart', 'Rocket', 'Gift', 'Zap', 'Mail',
-    ] as SectionIconKey[],
-  },
-]
+export const ICON_KEYS: SectionIconKey[] = Object.keys(SECTION_ICONS) as SectionIconKey[]

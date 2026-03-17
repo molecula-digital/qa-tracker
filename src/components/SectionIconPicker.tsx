@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { SECTION_ICONS, ICON_GROUPS, type SectionIconKey } from './SectionIcons'
+import { SECTION_ICONS, ICON_KEYS, type SectionIconKey } from './SectionIcons'
 import { Button } from '@/components/ui/button'
 
 interface SectionIconPickerProps {
@@ -12,7 +12,6 @@ interface SectionIconPickerProps {
 
 export function SectionIconPicker({ currentIcon, anchorEl, onSelect, onClose }: SectionIconPickerProps) {
   const popoverRef = useRef<HTMLDivElement>(null)
-  const [activeGroup, setActiveGroup] = useState(0)
 
   const rect = anchorEl.getBoundingClientRect()
   const top = rect.bottom + window.scrollY + 6
@@ -35,8 +34,6 @@ export function SectionIconPicker({ currentIcon, anchorEl, onSelect, onClose }: 
     }
   }, [anchorEl, onClose])
 
-  const group = ICON_GROUPS[activeGroup]
-
   return createPortal(
     <div
       ref={popoverRef}
@@ -47,19 +44,7 @@ export function SectionIconPicker({ currentIcon, anchorEl, onSelect, onClose }: 
         Section icon
       </p>
 
-      {/* Group tabs */}
-      <div className="flex gap-1 mb-2.5">
-        {ICON_GROUPS.map((g, i) => (
-          <Button
-            key={g.label}
-            variant={activeGroup === i ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveGroup(i)}
-            className="flex-1 h-6 text-[11px] px-1"
-          >
-            {g.label}
-          </Button>
-        ))}
+      <div className="flex justify-end mb-2.5">
         <Button
           variant={!currentIcon ? "default" : "outline"}
           size="sm"
@@ -72,8 +57,8 @@ export function SectionIconPicker({ currentIcon, anchorEl, onSelect, onClose }: 
 
       {/* Icon grid */}
       <div className="flex flex-wrap gap-1">
-        {group.keys.map((key) => {
-          const IconComp = SECTION_ICONS[key as SectionIconKey]
+        {ICON_KEYS.map((key) => {
+          const IconComp = SECTION_ICONS[key]
           const active = currentIcon === key
           return (
             <Button

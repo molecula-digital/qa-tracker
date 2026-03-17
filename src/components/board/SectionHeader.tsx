@@ -8,7 +8,7 @@ import type { Section, TagKey, PriorityKey } from '@/types/tracker'
 import type { ColumnSort } from '@/hooks/use-board-logic'
 import { SECTION_COLORS } from './constants'
 import { getHeaderColor } from './helpers'
-import { SECTION_ICONS, ICON_GROUPS, type SectionIconKey } from '@/components/SectionIcons'
+import { SECTION_ICONS, ICON_KEYS, type SectionIconKey } from '@/components/SectionIcons'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -57,7 +57,6 @@ export function SectionHeader({
   onDeleteSection,
   onAddItem,
 }: SectionHeaderProps) {
-  const [iconGroup, setIconGroup] = useState(0)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
 
@@ -230,18 +229,7 @@ export function SectionHeader({
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">
                     Section icon
                   </p>
-                  <div className="flex gap-1 mb-2.5">
-                    {ICON_GROUPS.map((g, i) => (
-                      <Button
-                        key={g.label}
-                        variant={iconGroup === i ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setIconGroup(i)}
-                        className="flex-1 h-6 text-[11px] px-1"
-                      >
-                        {g.label}
-                      </Button>
-                    ))}
+                  <div className="flex justify-end mb-2.5">
                     <Button
                       variant={!section.icon ? "default" : "outline"}
                       size="sm"
@@ -252,8 +240,8 @@ export function SectionHeader({
                     </Button>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {ICON_GROUPS[iconGroup].keys.map((key) => {
-                      const IconComp = SECTION_ICONS[key as SectionIconKey]
+                    {ICON_KEYS.map((key) => {
+                      const IconComp = SECTION_ICONS[key]
                       const active = section.icon === key
                       return (
                         <Button
