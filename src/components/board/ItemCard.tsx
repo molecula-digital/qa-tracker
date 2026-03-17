@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Tag, MessageSquare, Trash2, ArrowUp } from 'lucide-react'
+import { Tag, MessageSquare, Trash2, ArrowUp, UserPlus } from 'lucide-react'
 import type { Item, TagKey, PriorityKey, Note } from '@/types/tracker'
 import { TAG_COLORS, PRIORITY_COLORS, PRIORITY_LABELS } from './constants'
 import { renderTextWithLinks } from './helpers'
@@ -25,6 +25,7 @@ interface ItemCardProps {
   onAddNote: (text: string) => void
   onDeleteNote: (noteId: string) => void
   onOpenTagPicker: (anchorEl: HTMLButtonElement, item: Item) => void
+  onOpenAssigneePicker?: (anchorEl: HTMLElement, item: Item) => void
   readOnly?: boolean
 }
 
@@ -38,9 +39,11 @@ export function ItemCard({
   onAddNote,
   onDeleteNote,
   onOpenTagPicker,
+  onOpenAssigneePicker,
   readOnly,
 }: ItemCardProps) {
   const tagBtnRef = useRef<HTMLButtonElement>(null)
+  const assigneeBtnRef = useRef<HTMLButtonElement>(null)
   const [showNotes, setShowNotes] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -73,6 +76,54 @@ export function ItemCard({
 
   const tagCount = item.tags.length
   const noteCount = item.notes.length
+  const assigneeCount = item.assignees.length
+
+  const assigneeDisplay = (
+    <div className="flex items-center shrink-0">
+      {assigneeCount === 0 && !readOnly && onOpenAssigneePicker ? (
+        <button
+          ref={assigneeBtnRef}
+          onClick={(e) => { e.stopPropagation(); onOpenAssigneePicker(assigneeBtnRef.current!, item) }}
+          className="w-5 h-5 rounded-full border border-dashed border-border text-muted-foreground/40 hover:text-muted-foreground hover:border-muted-foreground flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity"
+          title="Assign"
+        >
+          <UserPlus size={10} />
+        </button>
+      ) : assigneeCount === 1 ? (
+        <button
+          ref={assigneeBtnRef}
+          onClick={(e) => { if (!readOnly && onOpenAssigneePicker) { e.stopPropagation(); onOpenAssigneePicker(assigneeBtnRef.current!, item) } }}
+          className="flex items-center gap-1.5 cursor-pointer"
+          title={item.assignees[0].name}
+        >
+          <Avatar className="w-5 h-5 shrink-0">
+            <AvatarFallback className="text-[8px] bg-muted text-muted-foreground">
+              {item.assignees[0].name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-[10px] text-muted-foreground">{item.assignees[0].name.split(' ')[0]}</span>
+        </button>
+      ) : assigneeCount > 1 ? (
+        <button
+          ref={assigneeBtnRef}
+          onClick={(e) => { if (!readOnly && onOpenAssigneePicker) { e.stopPropagation(); onOpenAssigneePicker(assigneeBtnRef.current!, item) } }}
+          className="flex items-center cursor-pointer"
+          title={item.assignees.map(a => a.name).join(', ')}
+        >
+          {item.assignees.slice(0, 3).map((a, i) => (
+            <Avatar key={a.id} className="w-5 h-5 shrink-0 border-2 border-background" style={{ marginLeft: i > 0 ? -6 : 0 }}>
+              <AvatarFallback className="text-[8px] bg-muted text-muted-foreground">
+                {a.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          ))}
+          {assigneeCount > 3 && (
+            <span className="text-[9px] text-muted-foreground ml-1">+{assigneeCount - 3}</span>
+          )}
+        </button>
+      ) : null}
+    </div>
+  )
 
   const formatTs = (ts: number) => {
     const d = new Date(ts)
@@ -150,6 +201,8 @@ export function ItemCard({
             </span>
           )}
         </div>
+
+        {assigneeDisplay}
 
         {/* Row actions — always visible */}
         {!readOnly && (
@@ -389,6 +442,11 @@ export function ItemCard({
           </span>
         </div>
       )}
+
+      {/* Assignees */}
+      <div className={`pl-7 ${assigneeCount > 0 ? '' : 'opacity-0 group-hover/card:opacity-100 transition-opacity'}`}>
+        {assigneeDisplay}
+      </div>
 
       {/* Footer actions */}
       {!readOnly && (
