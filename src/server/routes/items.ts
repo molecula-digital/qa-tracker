@@ -106,4 +106,26 @@ items.post(
   }
 );
 
+items.put(
+  "/:id/assignees",
+  zValidator(
+    "json",
+    z.object({
+      assigneeIds: z.array(z.string()),
+    })
+  ),
+  async (c) => {
+    const user = c.get("user");
+    const result = await itemService.setItemAssignees(
+      c.get("organizationId"),
+      user.id,
+      user.name ?? user.email,
+      c.req.param("id"),
+      c.req.valid("json").assigneeIds
+    );
+    if (result === null) return c.json({ error: "Not found" }, 404);
+    return c.json(result);
+  }
+);
+
 export default items;

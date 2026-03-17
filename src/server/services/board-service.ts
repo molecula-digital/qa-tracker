@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { section, item, itemTag, note, project } from "@/server/db/schema";
+import { section, item, itemTag, note, project, itemAssignee, user } from "@/server/db/schema";
 import { eq, and, inArray, asc, sql } from "drizzle-orm";
 import type { TagKey } from "@/types/tracker";
 
@@ -42,6 +42,25 @@ export async function getBoard(orgId: string, projectId: string) {
           .orderBy(asc(note.createdAt))
       : [];
 
+  const assignees = itemIds.length > 0
+    ? await db.select({
+        itemId: itemAssignee.itemId,
+        userId: user.id,
+        name: user.name,
+        image: user.image,
+      })
+      .from(itemAssignee)
+      .innerJoin(user, eq(itemAssignee.userId, user.id))
+      .where(inArray(itemAssignee.itemId, itemIds))
+    : [];
+
+  const assigneesByItem = new Map<string, { id: string; name: string; image: string | null }[]>();
+  for (const a of assignees) {
+    const arr = assigneesByItem.get(a.itemId) ?? [];
+    arr.push({ id: a.userId, name: a.name, image: a.image });
+    assigneesByItem.set(a.itemId, arr);
+  }
+
   const tagsByItem = new Map<string, TagKey[]>();
   for (const t of tags) {
     const arr = tagsByItem.get(t.itemId) ?? [];
@@ -67,6 +86,7 @@ export async function getBoard(orgId: string, projectId: string) {
       createdAt: new Date(i.createdAt).getTime(),
       tags: tagsByItem.get(i.id) ?? [],
       notes: notesByItem.get(i.id) ?? [],
+      assignees: assigneesByItem.get(i.id) ?? [],
     });
     itemsBySection.set(i.sectionId, arr);
   }

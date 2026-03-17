@@ -5,3 +5,5 @@ export * from "./items";
 export * from "./notes";
 export * from "./activity";
 export * from "./project-links";
+export * from "./itemAssignee";
+export * from "./notification";

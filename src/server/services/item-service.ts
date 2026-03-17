@@ -1,8 +1,9 @@
 import { db } from "@/server/db";
-import { item, itemTag, section, project } from "@/server/db/schema";
+import { item, itemTag, itemAssignee, section, project, user } from "@/server/db/schema";
 import { eq, and, inArray, sql, ilike } from "drizzle-orm";
 import { sseManager } from "@/server/lib/sse-manager";
 import { logActivity } from "@/server/lib/log-activity";
+import * as notificationService from "./notification-service";
 
 async function getProjectId(sectionId: string): Promise<string | null> {
   const [s] = await db
@@ -87,7 +88,7 @@ export async function createItem(
     sseManager.broadcastPatch(projectId, {
       action: "item:create",
       sectionId: data.sectionId,
-      data: { id, text: data.text, checked: false, priority: data.priority ?? null, tags: data.tags ?? [], notes: [] as never[] },
+      data: { id, text: data.text, checked: false, priority: data.priority ?? null, tags: data.tags ?? [], notes: [] as never[], assignees: [] },
     });
     logActivity({
       projectId,
@@ -153,6 +154,31 @@ export async function updateItem(
             ? `Unchecked "${existing.text}"`
             : `Updated item "${row.text}"`,
     });
+  }
+
+  // Notify assignees of changes
+  if (projectId) {
+    const assigneeRows = await db.select({ userId: itemAssignee.userId })
+      .from(itemAssignee).where(eq(itemAssignee.itemId, itemId));
+    const assigneeIds = assigneeRows.map(a => a.userId);
+    if (assigneeIds.length > 0) {
+      const notifType = data.checked !== undefined ? "item_checked" as const : "item_updated" as const;
+      const notifTitle = data.checked !== undefined
+        ? `Item ${data.checked ? 'completed' : 'reopened'}: ${row.text}`
+        : `Item updated: ${row.text}`;
+      const action2 =
+        data.checked !== undefined
+          ? data.checked
+            ? "completed"
+            : "reopened"
+          : "updated";
+      notificationService.notifyAssignees(
+        itemId, projectId, userId, notifType,
+        notifTitle,
+        `${userName} ${action2} "${row.text}"`,
+        assigneeIds,
+      );
+    }
   }
 
   return row;
@@ -238,6 +264,74 @@ export async function setItemTags(
   }
 
   return { tags };
+}
+
+export async function setItemAssignees(
+  orgId: string,
+  userId: string,
+  userName: string,
+  itemId: string,
+  assigneeIds: string[]
+) {
+  const [existing] = await db.select().from(item).where(eq(item.id, itemId));
+  if (!existing) return null;
+  if (!(await verifySectionOrg(existing.sectionId, orgId))) return null;
+
+  // Get current assignees before change
+  const currentAssignees = await db.select({ userId: itemAssignee.userId })
+    .from(itemAssignee).where(eq(itemAssignee.itemId, itemId));
+  const currentIds = currentAssignees.map(a => a.userId);
+
+  // Replace all assignees
+  await db.delete(itemAssignee).where(eq(itemAssignee.itemId, itemId));
+  if (assigneeIds.length > 0) {
+    await db.insert(itemAssignee).values(
+      assigneeIds.map((uid) => ({
+        id: crypto.randomUUID(),
+        itemId,
+        userId: uid,
+      }))
+    );
+  }
+
+  // Fetch assignee details for SSE
+  const assignees = assigneeIds.length > 0
+    ? await db.select({ id: user.id, name: user.name, image: user.image })
+        .from(user).where(inArray(user.id, assigneeIds))
+    : [];
+
+  const projectId = await getProjectId(existing.sectionId);
+  if (projectId) {
+    sseManager.broadcastPatch(projectId, {
+      action: "item:assignees",
+      sectionId: existing.sectionId,
+      itemId,
+      assignees,
+    });
+
+    // Notify newly added assignees
+    const newAssignees = assigneeIds.filter(id => !currentIds.includes(id));
+    if (newAssignees.length > 0) {
+      notificationService.notifyAssignees(
+        itemId, projectId, userId, "assigned",
+        `Assigned to: ${existing.text}`,
+        `${userName} assigned you to "${existing.text}"`,
+        newAssignees,
+      );
+    }
+
+    logActivity({
+      projectId,
+      actorId: userId,
+      actorName: userName,
+      action: "updated",
+      entity: "item",
+      entityId: itemId,
+      description: `Updated assignees on "${existing.text}"`,
+    });
+  }
+
+  return { assignees };
 }
 
 export async function searchItems(
