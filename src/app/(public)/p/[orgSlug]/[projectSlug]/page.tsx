@@ -87,7 +87,7 @@ export default function PublicProjectPage({
     }
   }, [data]);
 
-  if (error || !data) {
+  if (!isLoading && (error || !data)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-2">
@@ -99,7 +99,7 @@ export default function PublicProjectPage({
     );
   }
 
-  const sections = isLoading ? [] : adaptSections(data.sections);
+  const sections = isLoading || !data ? [] : adaptSections(data.sections);
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-10">

@@ -82,11 +82,12 @@ export function ItemCard({
 
   if (variant === 'row') {
     return (
-      <div className={`group/card flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors ${
+      <div className={`group/card transition-colors ${
         isUrgent
           ? 'border-l-2 border-l-red-500/40 bg-red-500/3 hover:bg-red-500/6'
           : 'hover:bg-muted/40'
       }`}>
+        <div className="flex items-center gap-2.5 px-3 py-2">
         <Checkbox
           checked={item.checked}
           onCheckedChange={onToggle}
@@ -118,7 +119,7 @@ export function ItemCard({
               item.checked ? 'text-muted-foreground/60 line-through' : 'text-foreground'
             }`}
           >
-            {item.text}
+            {renderTextWithLinks(item.text)}
           </span>
         )}
 
@@ -228,7 +229,8 @@ export function ItemCard({
           </div>
         )}
 
-        {/* Notes panel for row variant */}
+        </div>
+        {/* Notes panel for row variant — outside the flex row */}
         <AnimatePresence initial={false}>
           {showNotes && (
             <motion.div
@@ -236,9 +238,9 @@ export function ItemCard({
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.18 }}
-              className="overflow-hidden w-full"
+              className="overflow-hidden"
             >
-              <div className="pl-7 pt-2 border-t border-kanban-border/50 mt-2">
+              <div className="pl-9 pt-2 pb-2 border-t border-kanban-border/50">
                 {noteCount > 0 && (
                   <div className="mb-2.5 space-y-0">
                     {item.notes.map((note: Note, idx) => (
@@ -328,7 +330,7 @@ export function ItemCard({
               item.checked ? 'text-muted-foreground/60 line-through' : 'text-foreground'
             }`}
           >
-            {item.text}
+            {renderTextWithLinks(item.text)}
           </span>
         )}
         {!readOnly && (confirmDelete ? (
