@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Search, Plus, X, CheckCircle2, LayoutGrid, ListTodo, List,
   Activity, Clock, User, TrendingUp, Copy, ExternalLink, Check, Filter,
+  ArrowUp, CircleCheck, Tag, Calendar,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/hooks/use-projects";
@@ -929,7 +930,9 @@ export default function ProjectPage({
 
               {/* Priority filter */}
               <div className="space-y-1.5">
-                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Priority</span>
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
+                  <ArrowUp size={12} /> Priority
+                </span>
                 <div className="flex flex-wrap gap-1.5">
                   {(['low', 'medium', 'high', 'urgent'] as const).map((p) => {
                     const active = filters.priority.includes(p)
@@ -955,7 +958,9 @@ export default function ProjectPage({
 
               {/* Status filter */}
               <div className="space-y-1.5">
-                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Status</span>
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
+                  <CircleCheck size={12} /> Status
+                </span>
                 <div className="flex gap-1.5">
                   {(['all', 'unchecked', 'checked'] as const).map((s) => (
                     <button
@@ -975,7 +980,9 @@ export default function ProjectPage({
 
               {/* Tag filter */}
               <div className="space-y-1.5">
-                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Tags</span>
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
+                  <Tag size={12} /> Tags
+                </span>
                 <div className="flex gap-1.5">
                   {(['bug', 'question', 'later'] as const).map((t) => {
                     const active = filters.tags.includes(t)
@@ -1001,7 +1008,9 @@ export default function ProjectPage({
 
               {/* Date filter */}
               <div className="space-y-1.5">
-                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Created</span>
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
+                  <Calendar size={12} /> Created
+                </span>
                 <div className="flex gap-1.5">
                   {(['all', 'today', 'week', 'month'] as const).map((d) => (
                     <button
