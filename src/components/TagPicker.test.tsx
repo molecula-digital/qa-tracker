@@ -4,7 +4,7 @@ import { TagPicker } from './TagPicker'
 import type { Item } from '../types/tracker'
 
 const baseItem: Item = {
-  id: 'i1', text: 'Test', checked: false, tags: [], notes: [],
+  id: 'i1', text: 'Test', checked: false, tags: [], notes: [], priority: null, assignees: [],
 }
 const anchorEl = document.createElement('button')
 

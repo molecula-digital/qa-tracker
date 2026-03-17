@@ -109,3 +109,26 @@ export function useSetItemTags() {
     },
   });
 }
+
+export function useSetItemAssignees() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      sectionId,
+      assigneeIds,
+    }: {
+      id: string;
+      sectionId: string;
+      assigneeIds: string[];
+    }) =>
+      fetchJSON(`/api/items/${id}/assignees`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assigneeIds }),
+      }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["items", vars.sectionId] });
+    },
+  });
+}

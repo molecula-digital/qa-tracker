@@ -58,6 +58,7 @@ function adaptSections(sections: PublicSection[]) {
       priority: item.priority ?? null,
       tags: item.tags as TagKey[],
       notes: [] as { id: string; text: string; ts: number }[],
+      assignees: [],
     })),
   }));
 }

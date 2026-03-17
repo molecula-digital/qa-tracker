@@ -8,6 +8,12 @@ export interface Note {
   ts: number
 }
 
+export interface ItemAssignee {
+  id: string
+  name: string
+  image: string | null
+}
+
 export interface Item {
   id: string
   text: string
@@ -15,6 +21,7 @@ export interface Item {
   tags: TagKey[]
   notes: Note[]
   priority: PriorityKey | null
+  assignees: ItemAssignee[]
   createdAt?: number
 }
 

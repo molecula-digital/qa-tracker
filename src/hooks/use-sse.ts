@@ -58,7 +58,7 @@ function applyPatch(board: BoardData, patch: Record<string, unknown>): BoardData
       return {
         sections: board.sections.map((s) =>
           s.id === sectionId
-            ? { ...s, items: [...s.items, { id: d.id, text: d.text, checked: d.checked, priority: (d.priority ?? null) as Item["priority"], createdAt: Date.now(), tags: d.tags as Item["tags"], notes: [] }] }
+            ? { ...s, items: [...s.items, { id: d.id, text: d.text, checked: d.checked, priority: (d.priority ?? null) as Item["priority"], createdAt: Date.now(), tags: d.tags as Item["tags"], notes: [], assignees: [] }] }
             : s
         ),
       };

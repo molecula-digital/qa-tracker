@@ -609,7 +609,7 @@ export default function ProjectPage({
                 ...s,
                 items: [
                   ...s.items,
-                  { id: crypto.randomUUID(), text, checked: false, priority: priority ?? null, createdAt: Date.now(), tags: tags ?? [], notes: [] },
+                  { id: crypto.randomUUID(), text, checked: false, priority: priority ?? null, createdAt: Date.now(), tags: tags ?? [], notes: [], assignees: [] },
                 ],
               }
             : s
