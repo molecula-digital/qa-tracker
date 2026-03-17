@@ -27,6 +27,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { NotificationBell } from "@/components/NotificationBell";
+import { ToastContainer } from "@/components/Toast";
 import { AiChat } from "@/components/AiChat";
 
 const navItems = [
@@ -257,6 +259,18 @@ export default function DashboardLayout({
 
         <Separator className="my-2 bg-sidebar-border" />
 
+        {/* Notifications */}
+        <div className={`${collapsed ? "flex justify-center" : "px-2"} mb-1`}>
+          {collapsed ? (
+            <NotificationBell />
+          ) : (
+            <div className="flex items-center gap-2 px-3 h-8">
+              <NotificationBell />
+              <span className="text-sm text-muted-foreground">Notifications</span>
+            </div>
+          )}
+        </div>
+
         {/* Theme switcher */}
         <div className={`${collapsed ? "flex justify-center" : "px-2"} mb-2`}>
           <ThemeSwitcher collapsed={collapsed} />
@@ -319,6 +333,7 @@ export default function DashboardLayout({
         </div>
       </main>
       <AiChat />
+      <ToastContainer />
     </div>
   );
 }

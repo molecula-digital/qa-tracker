@@ -23,12 +23,15 @@ import {
   useUpdateItem,
   useDeleteItem,
   useSetItemTags,
+  useSetItemAssignees,
 } from "@/hooks/use-items";
 import { useCreateNote, useDeleteNote } from "@/hooks/use-notes";
 import { KanbanBoard, type BoardFilters, DEFAULT_FILTERS } from "@/components/KanbanBoard";
 import { ListView } from "@/components/ListView";
 import { KanbanSkeleton, ListSkeleton } from "@/components/BoardSkeleton";
 import { TagPicker } from "@/components/TagPicker";
+import { AssigneePicker } from "@/components/board/AssigneePicker";
+import type { Member } from "@/hooks/use-members";
 import { EmptyState } from "@/components/EmptyState";
 import { ProjectLinks } from "@/components/ProjectLinks";
 import { Button } from "@/components/ui/button";
@@ -441,6 +444,12 @@ export default function ProjectPage({
     anchorEl: HTMLButtonElement;
   } | null>(null);
 
+  const [assigneePickerState, setAssigneePickerState] = useState<{
+    item: Item;
+    sectionId: string;
+    anchorEl: HTMLElement;
+  } | null>(null);
+
   const [filters, setFilters] = useState<BoardFilters>(DEFAULT_FILTERS);
 
   const [layout, setLayout] = useState<'kanban' | 'list'>(() => {
@@ -481,6 +490,7 @@ export default function ProjectPage({
   const updateItem = useUpdateItem();
   const deleteItem = useDeleteItem();
   const setItemTags = useSetItemTags();
+  const setItemAssignees = useSetItemAssignees();
   const createNote = useCreateNote();
   const deleteNote = useDeleteNote();
 
@@ -841,6 +851,38 @@ export default function ProjectPage({
     [tagPickerState, setItemTags, invalidateBoard]
   );
 
+  const handleOpenAssigneePicker = useCallback(
+    (anchorEl: HTMLElement, item: Item, sectionId: string) => {
+      setAssigneePickerState({ item, sectionId, anchorEl });
+    },
+    []
+  );
+
+  const handleToggleAssignee = useCallback(
+    (member: Member) => {
+      if (!assigneePickerState) return;
+      const { item, sectionId } = assigneePickerState;
+      const currentIds = item.assignees.map(a => a.id);
+      const newIds = currentIds.includes(member.id)
+        ? currentIds.filter(id => id !== member.id)
+        : [...currentIds, member.id];
+
+      setItemAssignees.mutate(
+        { id: item.id, sectionId, assigneeIds: newIds },
+        { onSettled: invalidateBoard }
+      );
+
+      // Update local state for immediate feedback
+      const newAssignees = newIds.includes(member.id)
+        ? [...item.assignees, { id: member.id, name: member.name, image: member.image }]
+        : item.assignees.filter(a => a.id !== member.id);
+      setAssigneePickerState(prev =>
+        prev ? { ...prev, item: { ...prev.item, assignees: newAssignees } } : null
+      );
+    },
+    [assigneePickerState, setItemAssignees, invalidateBoard]
+  );
+
   if (loadingProject) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -1163,6 +1205,7 @@ export default function ProjectPage({
                 onDeleteSection={handleDeleteSection} onUpdateSectionTitle={handleUpdateSectionTitle}
                 onColorChange={handleColorChange} onIconChange={handleIconChange}
                 onReorder={handleReorder} onOpenTagPicker={handleOpenTagPicker}
+                onOpenAssigneePicker={handleOpenAssigneePicker}
                 onAddSection={handleAddSection} />
             </div>
           ) : (
@@ -1175,6 +1218,7 @@ export default function ProjectPage({
                 onDeleteSection={handleDeleteSection} onUpdateSectionTitle={handleUpdateSectionTitle}
                 onColorChange={handleColorChange} onIconChange={handleIconChange}
                 onReorder={handleReorder} onOpenTagPicker={handleOpenTagPicker}
+                onOpenAssigneePicker={handleOpenAssigneePicker}
                 onAddSection={handleAddSection} />
             </div>
           )}
@@ -1208,6 +1252,16 @@ export default function ProjectPage({
           anchorEl={tagPickerState.anchorEl}
           onToggleTag={handleToggleTag}
           onClose={() => setTagPickerState(null)}
+        />
+      )}
+
+      {/* Assignee picker popup */}
+      {assigneePickerState && (
+        <AssigneePicker
+          assignees={assigneePickerState.item.assignees}
+          anchorEl={assigneePickerState.anchorEl}
+          onToggleAssignee={handleToggleAssignee}
+          onClose={() => setAssigneePickerState(null)}
         />
       )}
     </div>

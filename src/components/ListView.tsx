@@ -27,6 +27,7 @@ interface ListViewProps {
   onIconChange: (sectionId: string, icon: string) => void
   onReorder: (fromIndex: number, toIndex: number) => void
   onOpenTagPicker: (anchorEl: HTMLButtonElement, item: Item, sectionId: string) => void
+  onOpenAssigneePicker: (anchorEl: HTMLElement, item: Item, sectionId: string) => void
   onAddSection?: () => void
 }
 
@@ -34,7 +35,7 @@ export function ListView({
   sections, search, newestSectionId, readOnly, filters,
   onToggleItem, onAddItem, onUpdateItemText, onUpdateItemPriority, onDeleteItem,
   onAddNote, onDeleteNote, onDeleteSection, onUpdateSectionTitle,
-  onColorChange, onIconChange, onReorder, onOpenTagPicker, onAddSection,
+  onColorChange, onIconChange, onReorder, onOpenTagPicker, onOpenAssigneePicker, onAddSection,
 }: ListViewProps) {
   const { sortStates, setSortState, processItems } = useBoardLogic({
     sections,
@@ -136,6 +137,7 @@ export function ListView({
                               onAddNote={(text) => onAddNote(section.id, item.id, text)}
                               onDeleteNote={(noteId) => onDeleteNote(section.id, item.id, noteId)}
                               onOpenTagPicker={(anchorEl, item) => onOpenTagPicker(anchorEl, item, section.id)}
+                              onOpenAssigneePicker={(anchorEl, it) => onOpenAssigneePicker(anchorEl, it, section.id)}
                               readOnly={readOnly}
                             />
                           ))}

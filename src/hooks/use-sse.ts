@@ -58,7 +58,7 @@ function applyPatch(board: BoardData, patch: Record<string, unknown>): BoardData
       return {
         sections: board.sections.map((s) =>
           s.id === sectionId
-            ? { ...s, items: [...s.items, { id: d.id, text: d.text, checked: d.checked, priority: (d.priority ?? null) as Item["priority"], createdAt: Date.now(), tags: d.tags as Item["tags"], notes: [], assignees: [] }] }
+            ? { ...s, items: [...s.items, { id: d.id, text: d.text, checked: d.checked, priority: (d.priority ?? null) as Item["priority"], createdAt: Date.now(), tags: d.tags as Item["tags"], notes: [], assignees: (d as Record<string, unknown>).assignees as Item["assignees"] ?? [] }] }
             : s
         ),
       };
@@ -94,6 +94,18 @@ function applyPatch(board: BoardData, patch: Record<string, unknown>): BoardData
         sections: board.sections.map((s) =>
           s.id === sectionId
             ? { ...s, items: s.items.map((i) => (i.id === itemId ? { ...i, tags } : i)) }
+            : s
+        ),
+      };
+    }
+    case "item:assignees": {
+      const sectionId = patch.sectionId as string;
+      const itemId = patch.itemId as string;
+      const assignees = patch.assignees as Item["assignees"];
+      return {
+        sections: board.sections.map((s) =>
+          s.id === sectionId
+            ? { ...s, items: s.items.map((i) => (i.id === itemId ? { ...i, assignees } : i)) }
             : s
         ),
       };

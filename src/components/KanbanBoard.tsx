@@ -33,6 +33,7 @@ interface KanbanBoardProps {
   onIconChange: (sectionId: string, icon: string) => void
   onReorder: (fromIndex: number, toIndex: number) => void
   onOpenTagPicker: (anchorEl: HTMLButtonElement, item: Item, sectionId: string) => void
+  onOpenAssigneePicker: (anchorEl: HTMLElement, item: Item, sectionId: string) => void
   onAddSection?: () => void
 }
 
@@ -40,7 +41,7 @@ export function KanbanBoard({
   sections, search, newestSectionId, readOnly, filters,
   onToggleItem, onAddItem, onUpdateItemText, onUpdateItemPriority, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateSectionTitle, onColorChange, onIconChange,
-  onReorder, onOpenTagPicker, onAddSection,
+  onReorder, onOpenTagPicker, onOpenAssigneePicker, onAddSection,
 }: KanbanBoardProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dropIndex, setDropIndex] = useState<number | null>(null)
@@ -100,6 +101,7 @@ export function KanbanBoard({
               onColorChange={(color) => onColorChange(section.id, color)}
               onIconChange={(icon) => onIconChange(section.id, icon)}
               onOpenTagPicker={(anchorEl, item) => onOpenTagPicker(anchorEl, item, section.id)}
+              onOpenAssigneePicker={(anchorEl, item) => onOpenAssigneePicker(anchorEl, item, section.id)}
               readOnly={readOnly}
             />
           </motion.div>
@@ -158,6 +160,7 @@ interface KanbanColumnProps {
   onColorChange: (color: string) => void
   onIconChange: (icon: string) => void
   onOpenTagPicker: (anchorEl: HTMLButtonElement, item: Item) => void
+  onOpenAssigneePicker: (anchorEl: HTMLElement, item: Item) => void
   readOnly?: boolean
 }
 
@@ -166,7 +169,7 @@ function KanbanColumn({
   onDragStart, onDragOver, onDragEnd, onDrop, onSetSort,
   onToggleItem, onAddItem, onUpdateItemText, onUpdateItemPriority, onDeleteItem, onAddNote, onDeleteNote,
   onDeleteSection, onUpdateTitle, onColorChange, onIconChange,
-  onOpenTagPicker, readOnly,
+  onOpenTagPicker, onOpenAssigneePicker, readOnly,
 }: KanbanColumnProps) {
   const [hasOverflowBelow, setHasOverflowBelow] = useState(false)
   const cardsRef = useRef<HTMLDivElement>(null)
@@ -251,6 +254,7 @@ function KanbanColumn({
                 onAddNote={(text) => onAddNote(item.id, text)}
                 onDeleteNote={(noteId) => onDeleteNote(item.id, noteId)}
                 onOpenTagPicker={onOpenTagPicker}
+                onOpenAssigneePicker={onOpenAssigneePicker}
                 readOnly={readOnly}
               />
             </motion.div>

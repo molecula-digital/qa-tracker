@@ -162,6 +162,7 @@ export default function PublicProjectPage({
               onIconChange={() => {}}
               onReorder={() => {}}
               onOpenTagPicker={() => {}}
+              onOpenAssigneePicker={() => {}}
             />
           ) : (
             <ListView
@@ -182,6 +183,7 @@ export default function PublicProjectPage({
               onIconChange={() => {}}
               onReorder={() => {}}
               onOpenTagPicker={() => {}}
+              onOpenAssigneePicker={() => {}}
             />
           )}
         </div>
