@@ -3,7 +3,7 @@
 import { use, useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
-  Search, Plus, X, CheckCircle2, LayoutGrid, ListTodo,
+  Search, Plus, X, CheckCircle2, LayoutGrid, ListTodo, List,
   Activity, Clock, User, TrendingUp, Copy, ExternalLink, Check, Filter,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,6 +25,8 @@ import {
 } from "@/hooks/use-items";
 import { useCreateNote, useDeleteNote } from "@/hooks/use-notes";
 import { KanbanBoard, type BoardFilters, DEFAULT_FILTERS } from "@/components/KanbanBoard";
+import { ListView } from "@/components/ListView";
+import { KanbanSkeleton, ListSkeleton } from "@/components/BoardSkeleton";
 import { TagPicker } from "@/components/TagPicker";
 import { EmptyState } from "@/components/EmptyState";
 import { ProjectLinks } from "@/components/ProjectLinks";
@@ -439,6 +441,17 @@ export default function ProjectPage({
   } | null>(null);
 
   const [filters, setFilters] = useState<BoardFilters>(DEFAULT_FILTERS);
+
+  const [layout, setLayout] = useState<'kanban' | 'list'>(() => {
+    if (typeof document === 'undefined') return 'kanban'
+    const match = document.cookie.match(/(?:^|; )view-layout=(\w+)/)
+    return (match?.[1] === 'list') ? 'list' : 'kanban'
+  })
+
+  const handleSetLayout = useCallback((l: 'kanban' | 'list') => {
+    setLayout(l)
+    document.cookie = `view-layout=${l}; path=/; max-age=31536000; SameSite=Lax`
+  }, [])
 
   const hasActiveFilters = filters.priority.length > 0 || filters.checked !== 'all' || filters.tags.length > 0 || filters.dateRange !== 'all';
 
@@ -1049,6 +1062,28 @@ export default function ProjectPage({
           </div>
         )}
 
+        {/* Layout selector */}
+        <div className="flex items-center bg-muted border border-border rounded-md">
+          <button
+            onClick={() => handleSetLayout('kanban')}
+            className={`flex items-center justify-center w-7 h-7 rounded-l-md transition-colors ${
+              layout === 'kanban' ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Board view"
+          >
+            <LayoutGrid size={14} />
+          </button>
+          <button
+            onClick={() => handleSetLayout('list')}
+            className={`flex items-center justify-center w-7 h-7 rounded-r-md transition-colors ${
+              layout === 'list' ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="List view"
+          >
+            <List size={14} />
+          </button>
+        </div>
+
         {/* Search toggle */}
         {searchOpen ? (
           <div className="flex items-center gap-1.5 bg-muted border border-border rounded-md px-2 h-7">
@@ -1100,41 +1135,38 @@ export default function ProjectPage({
 
         <TabsContent value="board" className="flex-1 overflow-hidden mt-0 -mx-4">
           {loadingBoard ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground text-sm">Loading board...</p>
+            <div className="h-full px-4">
+              {layout === 'kanban' ? <KanbanSkeleton /> : <ListSkeleton />}
             </div>
           ) : sections.length === 0 ? (
             <div className="h-full flex items-center justify-center">
-              <EmptyState
-                icon={LayoutGrid}
-                title="No sections yet"
+              <EmptyState icon={LayoutGrid} title="No sections yet"
                 subtitle="Add your first section to start organizing test cases."
-                ctaLabel="Add section"
-                onCta={handleAddSection}
-              />
+                ctaLabel="Add section" onCta={handleAddSection} />
+            </div>
+          ) : layout === 'kanban' ? (
+            <div className="h-full px-4">
+              <KanbanBoard sections={sections} search={search} filters={filters}
+                newestSectionId={newestSectionId}
+                onToggleItem={handleToggleItem} onAddItem={handleAddItem}
+                onUpdateItemText={handleUpdateItemText} onUpdateItemPriority={handleUpdateItemPriority}
+                onDeleteItem={handleDeleteItem} onAddNote={handleAddNote} onDeleteNote={handleDeleteNote}
+                onDeleteSection={handleDeleteSection} onUpdateSectionTitle={handleUpdateSectionTitle}
+                onColorChange={handleColorChange} onIconChange={handleIconChange}
+                onReorder={handleReorder} onOpenTagPicker={handleOpenTagPicker}
+                onAddSection={handleAddSection} />
             </div>
           ) : (
             <div className="h-full px-4">
-              <KanbanBoard
-                sections={sections}
-                search={search}
-                filters={filters}
+              <ListView sections={sections} search={search} filters={filters}
                 newestSectionId={newestSectionId}
-                onToggleItem={handleToggleItem}
-                onAddItem={handleAddItem}
-                onUpdateItemText={handleUpdateItemText}
-                onUpdateItemPriority={handleUpdateItemPriority}
-                onDeleteItem={handleDeleteItem}
-                onAddNote={handleAddNote}
-                onDeleteNote={handleDeleteNote}
-                onDeleteSection={handleDeleteSection}
-                onUpdateSectionTitle={handleUpdateSectionTitle}
-                onColorChange={handleColorChange}
-                onIconChange={handleIconChange}
-                onReorder={handleReorder}
-                onOpenTagPicker={handleOpenTagPicker}
-                onAddSection={handleAddSection}
-              />
+                onToggleItem={handleToggleItem} onAddItem={handleAddItem}
+                onUpdateItemText={handleUpdateItemText} onUpdateItemPriority={handleUpdateItemPriority}
+                onDeleteItem={handleDeleteItem} onAddNote={handleAddNote} onDeleteNote={handleDeleteNote}
+                onDeleteSection={handleDeleteSection} onUpdateSectionTitle={handleUpdateSectionTitle}
+                onColorChange={handleColorChange} onIconChange={handleIconChange}
+                onReorder={handleReorder} onOpenTagPicker={handleOpenTagPicker}
+                onAddSection={handleAddSection} />
             </div>
           )}
         </TabsContent>
